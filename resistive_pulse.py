@@ -1,22 +1,73 @@
-#######################################################################
-## RESISTIVE PULSE
-#######################################################################
-# Contains tools for opening, analyzing resistive pulse data
-# Sections:
-# 1. Imports
-# 2. Constants
-# 3. Functions
-    # get_file_length()
-    # get_data_atf()
-    # get_data_raw()
+"""
 
+RESISTIVE PULSE
+
+* Contains tools for opening, analyzing resistive pulse data
+
+* Sections:
+    1. Imports
+    2. Constants
+    3. Classes
+        - ResistivePulseEvent
+    4. Functions
+        - get_file_length()
+        - get_data_atf()
+        - get_data_raw()
+        - get_baseline()
+        - find_events_raw()
+        - get_maxima_minima()
+
+"""
 # Imports
-import csv
+
+
 import numpy as np
-from event import Event
+import csv
+
+from scipy.ndimage.filters import gaussian_filter
+
 
 # Constants
 ATF_HEADER_LENGTH = 10          # Number of rows in axon text file (.atf) header
+
+import numpy as np
+from copy import copy
+
+class ResistivePulseEvent:
+
+    def __init__(self, data, start, stop, baseline_avg):
+        # Declare member variables
+        self._data=None
+        self._start_index=None
+        self._stop_index=None
+        self._length=None
+        self._duration=None
+        self._amplitude=None
+        self._baseline_avg=None
+
+        self._extrema=None
+        self._maxima=None
+        self._minima=None
+
+        # Initialize member variables
+        self._data = data[start:stop,:]
+        self._start_index = start
+        self._stop_index = stop
+        self._length = self._stop_index - self._start_index
+        self._duration = self._data[-1,0]-self._data[0,0]
+        self._amplitude = self._data[:, 1].max()-self._data[:, 1].min()
+        self._baseline_avg = baseline_avg
+        return
+
+
+
+    def set_extrema(self, minima, maxima):
+        self._extrema=minima+maxima
+        self._extrema.sort()
+        self._maxima=maxima
+        self._minima=minima
+        return
+
 
 def get_file_length(file_name):
     """
@@ -147,8 +198,7 @@ def get_baseline(data, start, baseline_avg_length, trigger_sigma_threshold):
 
 
 def find_events_raw(file_name, start = -1, stop = -1, baseline_avg_length = 200,
-                    event_avg_length = 5, trigger_sigma_threshold = 6,
-                    max_search_length = 1000):
+                    trigger_sigma_threshold = 6, max_search_length = 1000):
     """
     * Description: Finds events within a full resistive pulse file
       (.raw file only)
@@ -160,8 +210,6 @@ def find_events_raw(file_name, start = -1, stop = -1, baseline_avg_length = 200,
         - stop: Data point to stop search
         - baseline_avg_length (optional): Number of data points to
           average baseline over
-        - event_avg_length (optional): Number of data points to
-          average within an event
         - trigger_sigma_threshold (optional): Number of standard
           deviations above or below baseline for an event to be
           triggered
@@ -289,13 +337,15 @@ def find_events_raw(file_name, start = -1, stop = -1, baseline_avg_length = 200,
                         index=stop_index
                         event_indices=np.vstack((event_indices,
                                       np.array([start_index, stop_index])))
+                        events.append(ResistivePulseEvent(data, start_index,
+                                                          stop_index,
+                                                          baseline[1]))
 
-                        events.append(Event(data, start_index,
-                                            stop_index, baseline[1]))
+                        print 'event #', len(events)
+                        print '\trange = ', start_index, stop_index
 
                     # Check if exceeded max search length
                     if index-start_index >= max_search_length:
-                        print 'e'
                         stop_trigger_found = True
                         index=start_index+max_search_length
                         baseline=get_baseline(data, index, baseline_avg_length,
@@ -309,3 +359,70 @@ def find_events_raw(file_name, start = -1, stop = -1, baseline_avg_length = 200,
 
 
     return events
+
+def get_maxima_minima(data, sigma=0, refine_length=0):
+    """
+    * Description: Finds the maxima, minima within 2-d, evenly sampled data.
+        - First, applies a Gaussian filter (scipy) to the data to smooth it
+        - Calculates first and second derivatives of data at each point
+        - Extrema are detected via a change in sign of first derivatives
+        - Maximum/minimum is determined by sign of second derivative
+    * Return: Lists of max and mins indices (Two lists of floats: 'maxima',
+      'minima')
+    * Arguments:
+        - data: 1-d array of data to be searched for extrema
+        - sigma (optional): Standard deviation of Gaussian kernel. If
+          unspecified, data will be unfiltered.
+        - refine_length (optional): If a data point adjacent to a determined
+          extremum within +/- refine_length has a larger value than the
+          extremum, it will be replaced by that point.
+    """
+
+    # Smooth data
+    if sigma != 0:
+        smoothed_data = gaussian_filter(data, sigma=sigma)
+
+    # Find extrema
+    maxima=[]
+    minima=[]
+
+    # Calculate first derivatives everywhere
+    d_data=[((smoothed_data[(i+1)%len(smoothed_data)]-smoothed_data[i])+
+            (smoothed_data[i]-smoothed_data[i-1]))/2.
+            for i in range(len(smoothed_data))]
+
+
+    derivative_sign=(1*int(smoothed_data[1]>smoothed_data[0])-
+                     1*int(smoothed_data[1]<=smoothed_data[0]))
+    for i in range(smoothed_data.shape[0]-1):
+        new_derivative_sign=(1*int(smoothed_data[i+1]>smoothed_data[i])-
+                            1*int(smoothed_data[i+1]<=smoothed_data[i]))
+        if new_derivative_sign != derivative_sign:
+            # Found derivative = 0, calculate 2nd derivative to see if min/max
+            d2=(((d_data[(i+1)%len(d_data)]-d_data[i])+
+               (d_data[i]-d_data[i-1]))/2.)
+            if d2<=0:
+                maxima.append(i)
+            else:
+                minima.append(i)
+        derivative_sign=new_derivative_sign
+
+    # Refine maxima/minima
+    new_maxima=[]
+    for i, maximum in enumerate(maxima):
+        temp_data = np.array(data[maximum-
+                                  refine_length:maximum+refine_length+1])
+        print np.argsort(temp_data)
+        new_maxima.append(maximum + (np.argsort(temp_data)[-1]-refine_length))
+        maxima[i] = new_maxima
+    maxima=new_maxima
+
+    new_minima=[]
+    for i, minimum in enumerate(minima):
+        temp_data = np.array(data[minimum-
+                                  refine_length:minimum+refine_length+1])
+        new_minima = minimum + (np.argsort(temp_data)[0]-refine_length)
+        minima[i] = new_minima
+
+
+    return maxima, minima

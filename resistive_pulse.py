@@ -23,6 +23,7 @@ RESISTIVE PULSE
 
 import numpy as np
 import csv
+import matplotlib.pyplot as plt
 
 from scipy.ndimage.filters import gaussian_filter
 
@@ -83,6 +84,32 @@ def get_file_length(file_name):
         f.close()
         return i+1
 
+def atf_to_raw(file_name, current_column):
+    output_file_name = file_name.split('.')[0]
+
+
+    # Open file
+    file_handle=open(file_name, 'r')
+    output_file_handle=open(output_file_name, 'w')
+    csv_reader=csv.reader(file_handle, delimiter='\t', quotechar='|')
+
+    # Skip header
+    for i in range(0, ATF_HEADER_LENGTH):
+        row=csv_reader.next()
+
+    # Read data
+    while row:
+        row=csv_reader.next()
+        t=row[0]
+        I=row[current_column]
+        output_file_handle.write(str(t)+"\t"+str(I)+"\n")
+
+    # Close file
+    file_handle.close()
+    output_file_handle.close()
+
+    # Return
+    return
 
 
 def get_data_atf(file_name, current_column, start=-1, stop=-1):
@@ -103,7 +130,7 @@ def get_data_atf(file_name, current_column, start=-1, stop=-1):
     if start == -1:
         start = 0
     if stop == -1:
-        stop = file_len(file_name)
+        stop = get_file_length(file_name)
 
     # Open file
     file_handle=open(file_name, 'r')
@@ -141,13 +168,15 @@ def get_data_raw(file_name, start=-1, stop=-1):
     """
 
     # Initialize numpy array that will be returned
-    data = np.empty((stop-start,2))
+
 
     # Define start, stop points
     if start == -1:
         start = 0
     if stop == -1:
-        stop = file_len(file_name)
+        stop = get_file_length(file_name)
+
+    data = np.empty((stop-start,2))
 
     # Open file
     file_handle=open(file_name, 'r')
@@ -196,6 +225,38 @@ def get_baseline(data, start, baseline_avg_length, trigger_sigma_threshold):
 
     return baseline
 
+def plot_first_n_events(file_name, trigger_sigma_threshold, n = 5):
+    events_found = 0
+    events = []
+    start = 0
+    interval = 1000000
+    stop = interval
+    while events_found <= n:
+
+        data = get_data_raw(file_name, start, stop)
+        events = find_events_raw(file_name, start=start, stop=stop,
+                                 trigger_sigma_threshold=trigger_sigma_threshold)
+        print '# of events found!', len(events)
+        for event in events:
+
+            events_found +=1
+            if events_found <= n:
+                xi=event._start_index - 200
+                if xi < 0:
+                    xi = 0
+                xf=event._stop_index + 200
+                plt.plot(data[xi:xf,0], data[xi:xf,1])
+                plt.plot(event._data[:,0], event._data[:,1], c = (1.,0,0))
+                plt.xlim(data[xi,0], data[xf,0])
+                plt.show()
+
+        start += interval
+        stop += interval
+
+    return
+
+
+
 
 def find_events_raw(file_name, start = -1, stop = -1, baseline_avg_length = 200,
                     trigger_sigma_threshold = 6, max_search_length = 1000):
@@ -231,16 +292,15 @@ def find_events_raw(file_name, start = -1, stop = -1, baseline_avg_length = 200,
     events=[]
 
     # Get file length; define start, stop points; check points
-    file_length = get_file_length(file_name)
+
 
     if start == -1:
         start = 0
 
     if stop == -1:
-        stop = file_length
-
-    if stop > file_length:
+        file_length = get_file_length(file_name)
         stop = file_length - 1
+
 
     if start >= stop:
         print 'Check start, stop points!'
@@ -285,7 +345,6 @@ def find_events_raw(file_name, start = -1, stop = -1, baseline_avg_length = 200,
                         # updating baseline
                         if ((data[index, 1] < baseline[2])
                                 or (data[index, 1] > baseline[3])):
-
                                 # Trigger, get first point to exit baseline
                                 start_index = index
 
@@ -300,8 +359,6 @@ def find_events_raw(file_name, start = -1, stop = -1, baseline_avg_length = 200,
                                     if abs(data[start_index,1]) >= abs(reentry_threshold):
                                         start_trigger_found = True
                                     else:
-                                        event_avg=np.mean(data[start_index-
-                                            event_avg_length:start_index,1])
                                         start_index-=1
 
                         else:
@@ -322,6 +379,7 @@ def find_events_raw(file_name, start = -1, stop = -1, baseline_avg_length = 200,
 
                     # Check if return to baseline
                     if in_baseline == True:
+                        print 'c', index
                         stop_index = index
 
                         # Requirement for reentry into baseline is that

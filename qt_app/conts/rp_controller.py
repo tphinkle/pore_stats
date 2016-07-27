@@ -5,6 +5,7 @@ from rp_model import RPModel
 
 import PyQt4.QtCore as QtCore
 from PyQt4.QtGui import *
+import time
 
 class RPController(QtCore.QObject):
 
@@ -24,26 +25,33 @@ class RPController(QtCore.QObject):
         """
         # Get file name to load
         file_path = str(QFileDialog.getOpenFileName(parent = self._main_view))
-
+        print file_path
         if file_path:
-            # Create new RP model and set file
-            new_rp_model = self._main_model.create_rp_model()
-            new_rp_model.set_active_file(file_path)
-            new_rp_model.get_data_from_file()
-
-            # Create new RP view, subscribe view to model
-            new_rp_view = self._main_view.create_rp_view(parent_model = new_rp_model)
-
-            new_rp_model.add_subscriber(new_rp_view)
-
-            # Connect signals to slots
-            self.add_rp_slots(new_rp_view, new_rp_model)
-
-            # Set defaults
-            self.set_rp_view_defaults(new_rp_view)
-
-
+            self.test(file_path)
         return
+
+    def test(self, file_path):
+        # Create new RP model and set file
+        new_rp_model = self._main_model.create_rp_model()
+        new_rp_model.set_active_file(file_path)
+
+
+        # Create new RP view, subscribe view to model
+        new_rp_view = self._main_view.create_rp_view(parent_model = new_rp_model)
+
+        new_rp_model.add_subscriber(new_rp_view)
+
+        # Connect signals to slots
+        self.add_rp_slots(new_rp_view, new_rp_model)
+
+        # Set defaults
+        self.set_rp_view_defaults(new_rp_view)
+
+
+
+
+        new_rp_model.get_data_from_file()
+
 
     def add_rp_slots(self, rp_view, rp_model):
         rp_view._main_plot.sigRangeChanged.connect(lambda rng: \

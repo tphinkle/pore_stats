@@ -105,10 +105,11 @@ class RPModel(object):
         return
 
     def get_data_from_file(self):
-        print 't1 = ', time.time()
-        self._data = ts.TimeSeries(rp_file.get_data(self._active_file._file_path),\
-            self.display_decimation_threshold, self.decimation_factor)
-        print 't2 = ', time.time()
+        print 't1!:', time.time()
+        data = rp_file.get_data(self._active_file._file_path)
+        print 't2!:', time.time()
+        self._data = ts.TimeSeries(data, self.display_decimation_threshold, self.decimation_factor)
+        print 't3!:', time.time()
 
         return
 

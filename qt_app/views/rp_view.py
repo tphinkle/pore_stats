@@ -141,6 +141,8 @@ class RPView(QtGui.QWidget):
 
     def show(self):
         self._subwindow.show()
+        self._main_plot.show()
+        self._event_plot.show()
 
         return
 
@@ -162,7 +164,6 @@ class RPView(QtGui.QWidget):
         return
 
     def receive_update_targeted_event(self, targeted_event_data, points = []):
-        print 'aksdjf;lkasj;dfklj'
         self._event_plot_item.setData(targeted_event_data)
         for point in points:
             pass

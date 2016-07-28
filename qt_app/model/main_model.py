@@ -19,9 +19,7 @@ class MainModel(object):
         self._main_controller = main_controller
         return
 
-    def create_rp_model(self):
-        new_rp_model = rp_model.RPModel()
+    def create_rp_model(self, file_name):
+        new_rp_model = rp_model.RPModel(file_name)
         self._rp_models.append(new_rp_model)
         return new_rp_model
-
-    

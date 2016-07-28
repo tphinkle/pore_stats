@@ -1,13 +1,16 @@
 import sys
 
+import PyQt4.QtCore as QtCore
+
 PORE_STATS_DIR = '/home/preston/Desktop/Science/Research/pore_stats/'
 sys.path.append(PORE_STATS_DIR)
 import resistive_pulse as rp
 import rp_file
 import time_series as ts
 import time
+import load_data_thread
 
-class RPModel(object):
+class RPModel(QtCore.QObject):
     @property
     def file_path(self):
         return self._file_path
@@ -67,10 +70,13 @@ class RPModel(object):
 
 
 
-    def __init__(self):
-        self._active_file = None
+    def __init__(self, active_file):
+        super(RPModel, self).__init__()
 
-        self._data = None
+
+        self.set_active_file(active_file)
+
+
         self._baseline_data = None
 
         self._t_range=(0,0)
@@ -80,6 +86,12 @@ class RPModel(object):
 
         self._subscribers = []
 
+        self._data = ts.TimeSeries(self.display_decimation_threshold, self.decimation_factor)
+
+        print 'instantiating loader..'
+        self._loader = load_data_thread.LoadDataThread(self._active_file._file_path, self.display_decimation_threshold, self.decimation_factor)
+        self._data.connect(self._loader, QtCore.SIGNAL('add_tier(PyQt_PyObject, int)'), self._data.add_decimated_data_tier)
+        self._data.connect(self._loader, QtCore.SIGNAL('set_parameters(PyQt_PyObject)'), self._data.set_parameters)
 
         return
 
@@ -101,15 +113,6 @@ class RPModel(object):
 
     def set_active_file(self, file_path):
         self._active_file = rp_file.RPFile(file_path)
-
-        return
-
-    def get_data_from_file(self):
-        print 't1!:', time.time()
-        data = rp_file.get_data(self._active_file._file_path)
-        print 't2!:', time.time()
-        self._data = ts.TimeSeries(data, self.display_decimation_threshold, self.decimation_factor)
-        print 't3!:', time.time()
 
         return
 
@@ -194,3 +197,36 @@ class RPModel(object):
     def announce_update_targeted_event(self):
         for subscriber in self._subscribers:
             subscriber.receive_update_targeted_event(self._targeted_event._data[:,:])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+def get_data_from_file(self):
+    print 't1!:', time.time()
+    data = rp_file.get_data(self._active_file._file_path)
+    print 't2!:', time.time()
+    self._data = ts.TimeSeries(data, self.display_decimation_threshold, self.decimation_factor)
+    print 't3!:', time.time()
+
+    return
+"""

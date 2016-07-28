@@ -6,6 +6,7 @@ from rp_model import RPModel
 import PyQt4.QtCore as QtCore
 from PyQt4.QtGui import *
 import time
+import load_data_thread
 
 class RPController(QtCore.QObject):
 
@@ -24,33 +25,38 @@ class RPController(QtCore.QObject):
         * Arguments:
         """
         # Get file name to load
-        file_path = str(QFileDialog.getOpenFileName(parent = self._main_view))
-        print file_path
+        file_path = QFileDialog.getOpenFileName(parent = self._main_view)
+
+
+
         if file_path:
-            self.test(file_path)
+
+            # Create new RP model and set file
+            new_rp_model = self._main_model.create_rp_model(file_path)
+
+            new_rp_model.set_active_file(file_path)
+
+
+            # Create new RP view, subscribe view to model
+            new_rp_view = self._main_view.create_rp_view(parent_model = new_rp_model)
+
+
+
+            new_rp_model.add_subscriber(new_rp_view)
+
+            # Connect signals to slots
+            self.add_rp_slots(new_rp_view, new_rp_model)
+
+            # Set defaults
+            self.set_rp_view_defaults(new_rp_view)
+
+
+
+            #new_rp_model._loader = load_data_thread.LoadDataThread(file_path, new_rp_model.display_decimation_threshold, new_rp_model.decimation_factor)
+
+            new_rp_model._loader.start()
+
         return
-
-    def test(self, file_path):
-        # Create new RP model and set file
-        new_rp_model = self._main_model.create_rp_model()
-        new_rp_model.set_active_file(file_path)
-
-
-        # Create new RP view, subscribe view to model
-        new_rp_view = self._main_view.create_rp_view(parent_model = new_rp_model)
-
-        new_rp_model.add_subscriber(new_rp_view)
-
-        # Connect signals to slots
-        self.add_rp_slots(new_rp_view, new_rp_model)
-
-        # Set defaults
-        self.set_rp_view_defaults(new_rp_view)
-
-
-
-
-        new_rp_model.get_data_from_file()
 
 
     def add_rp_slots(self, rp_view, rp_model):
@@ -104,16 +110,13 @@ class RPController(QtCore.QObject):
         return
 
     def baseline_avg_length_field_changed(self, text, rp_model, rp_view):
-        print 'baseline length:', text
         rp_model.set_baseline_avg_length(int(text))
         return
 
     def trigger_sigma_threshold_field_changed(self, text, rp_model, rp_view):
-        print 'trigger_sigma_threshold', text
         rp_model.set_trigger_sigma_threshold(float(text))
         return
 
     def max_search_length_field_changed(self, text, rp_model, rp_view):
-        print 'max_search_length', text
         rp_model.set_max_search_length(int(text))
         return

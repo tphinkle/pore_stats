@@ -27,12 +27,11 @@ class RPController(QtCore.QObject):
         # Get file name to load
         file_path = QFileDialog.getOpenFileName(parent = self._main_view)
 
-        print 'asdf'
-
         if file_path:
 
             # Create new RP model and set file
-            new_rp_model = self._main_model.create_rp_model(file_path)
+            new_rp_model = self._main_model.create_rp_model(self)
+            
             new_rp_model.set_active_file(file_path)
 
 

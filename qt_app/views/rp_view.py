@@ -45,25 +45,21 @@ class RPView(QtGui.QWidget):
 
         self._main_plot = pg.PlotWidget(parent = self)
 
+        self._main_plot_item = pg.PlotDataItem()
+        self._main_plot_item.setPen(pen_1)
+        self._main_plot.addItem(self._main_plot_item)
 
+        self._baseline_plot_item = pg.PlotDataItem()
+        self._baseline_plot_item.setPen(pen_2)
+        self._main_plot.addItem(self._baseline_plot_item)
 
-        self._plot = pg.PlotDataItem()
-        self._plot.setPen(pen_1)
-        self._main_plot.addItem(self._plot)
+        self._thresh_high_plot_item = pg.PlotDataItem()
+        self._thresh_high_plot_item.setPen(pen_2)
+        self._main_plot.addItem(self._thresh_high_plot_item)
 
-
-
-        self._baseline_plot = pg.PlotDataItem()
-        self._baseline_plot.setPen(pen_2)
-        self._main_plot.addItem(self._baseline_plot)
-
-        self._thresh_high_plot = pg.PlotDataItem()
-        self._thresh_high_plot.setPen(pen_2)
-        self._main_plot.addItem(self._thresh_high_plot)
-
-        self._thresh_low_plot = pg.PlotDataItem()
-        self._thresh_low_plot.setPen(pen_2)
-        self._main_plot.addItem(self._thresh_low_plot)
+        self._thresh_low_plot_item = pg.PlotDataItem()
+        self._thresh_low_plot_item.setPen(pen_2)
+        self._main_plot.addItem(self._thresh_low_plot_item)
 
         main_plot_policy = QtGui.QSizePolicy()
         main_plot_policy.setVerticalStretch(5)

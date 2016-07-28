@@ -27,7 +27,7 @@ class RPController(QtCore.QObject):
         # Get file name to load
         file_path = QFileDialog.getOpenFileName(parent = self._main_view)
 
-
+        print 'asdf'
 
         if file_path:
 

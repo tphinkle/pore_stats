@@ -33,15 +33,11 @@ class RPController(QtCore.QObject):
 
             # Create new RP model and set file
             new_rp_model = self._main_model.create_rp_model(file_path)
-
             new_rp_model.set_active_file(file_path)
 
 
             # Create new RP view, subscribe view to model
             new_rp_view = self._main_view.create_rp_view(parent_model = new_rp_model)
-
-
-
             new_rp_model.add_subscriber(new_rp_view)
 
             # Connect signals to slots
@@ -50,11 +46,7 @@ class RPController(QtCore.QObject):
             # Set defaults
             self.set_rp_view_defaults(new_rp_view)
 
-
-
-            #new_rp_model._loader = load_data_thread.LoadDataThread(file_path, new_rp_model.display_decimation_threshold, new_rp_model.decimation_factor)
-
-            new_rp_model._loader.start()
+            new_rp_model.load_main_ts()
 
         return
 

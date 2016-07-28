@@ -8,7 +8,7 @@ import resistive_pulse as rp
 import rp_file
 import time_series as ts
 import time
-import load_data_thread
+import time_series_loader
 
 class RPModel(QtCore.QObject):
     @property
@@ -39,12 +39,14 @@ class RPModel(QtCore.QObject):
         self.announce_update_display_baseline_data()
 
     @property
-    def t_range(self):
-        return self._t_range
+    def processes_enabled(self):
+        return self._processes_enabled
 
-    @t_range.setter
-    def t_range(self, t_range):
-        self._t_range = t_range
+    @processes_enabled.setter
+    def processes_enabled(self, processes_enabled):
+        self._processes_enabled = processes_enabled
+        self.announce_update_processes_enabled(self._processes_enabled)
+        return
 
     @property
     def raw_events(self):
@@ -54,6 +56,7 @@ class RPModel(QtCore.QObject):
     def raw_events(self, raw_events):
         self._raw_events = raw_events
         self.announce_update_raw_events()
+        return
 
     @property
     def targeted_event(self):
@@ -73,11 +76,12 @@ class RPModel(QtCore.QObject):
     def __init__(self, active_file):
         super(RPModel, self).__init__()
 
+        self._status = {}
 
-        self.set_active_file(active_file)
+        self._main_ts = None
 
+        self._baseline_ts = None
 
-        self._baseline_data = None
 
         self._t_range=(0,0)
 
@@ -86,13 +90,31 @@ class RPModel(QtCore.QObject):
 
         self._subscribers = []
 
-        self._data = ts.TimeSeries(self.display_decimation_threshold, self.decimation_factor)
+    def set_active_file(self, file_path):
+        self._active_file = rp_file.RPFile(file_path)
+        return
 
-        print 'instantiating loader..'
-        self._loader = load_data_thread.LoadDataThread(self._active_file._file_path, self.display_decimation_threshold, self.decimation_factor)
-        self._data.connect(self._loader, QtCore.SIGNAL('add_tier(PyQt_PyObject, int)'), self._data.add_decimated_data_tier)
-        self._data.connect(self._loader, QtCore.SIGNAL('set_parameters(PyQt_PyObject)'), self._data.set_parameters)
+    def load_main_ts(self):
 
+        self._main_ts = ts.TimeSeries(self.display_decimation_threshold,\
+                                      self.decimation_factor,\
+                                      file_path=self._active_file._file_path)
+
+        self._time_series_loader = time_series_loader.TimeSeriesLoader(self._main_ts)
+        self.connect(self._time_series_loader, QtCore.SIGNAL('add_tier(PyQt_PyObject, int)'), self._main_ts.add_decimated_data_tier)
+        self.connect(self._time_series_loader, QtCore.SIGNAL('started'), lambda: self.set_loading_file_status(False))
+        self.connect(self._time_series_loader, QtCore.SIGNAL('finished'), lambda: self.set_loading_file_status(True))
+        self._time_series_loader.start()
+
+        self.update_ui()
+
+
+
+        return
+
+
+    def set_loading_file_status(enable):
+        self._status['loading_file'] = enable
         return
 
 
@@ -111,35 +133,34 @@ class RPModel(QtCore.QObject):
 
         return
 
-    def set_active_file(self, file_path):
-        self._active_file = rp_file.RPFile(file_path)
-
-        return
 
     def set_t_range(self, t_range):
 
         # Change t_range
         self._t_range = t_range
 
-        if self._data != None:
-            self.display_data = self._data.return_data(self._t_range[0], self._t_range[1])
+        if self._main_ts._plot_ready == True:
+            self.display_data = self._main_ts.return_data(self._t_range[0], self._t_range[1])
 
 
-
-
-
-        #if self._baseline_data != None:
-            #self.display_baseline_data = self._baseline_data.get_decimated_data(self._t_range[0], self._t_range[1])
+        if self._baseline_ts != None:
+            if self._baseline_ts._plot_ready == True:
+                self.display_baseline_data = self._baseline_data.get_decimated_data(self._t_range[0], self._t_range[1])
 
         return
 
+
+
     def calculate_baseline(self):
-        self._baseline_data = ts.TimeSeries(rp.get_full_baseline(\
-                                                                 self._data._data, \
-                                                                 self._baseline_avg_length,\
-                                                                 self._trigger_sigma_threshold),\
-                                            self.display_decimation_threshold,
-                                            self.decimation_factor)
+
+
+        baseline_data = ts.decimate_data(self._main_ts._decimation_data_tiers[0],
+                                         self._baseline_avg_length)
+
+        self._baseline_ts = ts.TimeSeries(rp.get_full_baseline(self.display_decimation_threshold,\
+                                                               self.decimation_factor,\
+                                                               full_data = )
+
 
         return
 
@@ -161,6 +182,9 @@ class RPModel(QtCore.QObject):
         new_index = (self._targeted_event._index + 1)%len(self._events)
 
 
+
+    def update_ui(self):
+        
 
 
     def add_subscriber(self, subscriber):
@@ -194,9 +218,19 @@ class RPModel(QtCore.QObject):
             for event in self._raw_events:
                 pass
 
+        return
+
     def announce_update_targeted_event(self):
         for subscriber in self._subscribers:
             subscriber.receive_update_targeted_event(self._targeted_event._data[:,:])
+
+        return
+
+    def announce_processes_enabled(self, processes_enabled):
+        for subscriber in self._subscribers:
+            subscriber.receive_update_process_buttons_enabled(processes_enabled)
+
+        return
 
 
 

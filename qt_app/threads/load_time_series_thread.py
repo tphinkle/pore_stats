@@ -32,7 +32,7 @@ class LoadTimeSeriesThread(QtCore.QThread):
         full_data = rp_file.get_data(self._file_name)
 
         self._max_decimation = full_data.shape[0]/self._max_pts_returned
-        self._decimation_tiers = int(math.ceil(math.log(1.*full_data.shape[0]/self._max_pts_returned, self._decimation_factor)))+1
+        
 
         parameters = [self._max_pts_returned, self._decimation_factor, self._max_decimation, self._decimation_tiers, ts.get_sampling_frequency(full_data)]
 

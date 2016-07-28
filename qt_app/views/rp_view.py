@@ -102,7 +102,6 @@ class RPView(QtGui.QWidget):
         # Set up buttons
         self._show_baseline_button = QtGui.QPushButton('Show baseline', parent = self._controls_pane)
         self._show_baseline_button.setGeometry(0,0,100,100)
-        self._show_baseline_button.setCheckable(True)
 
         self._find_events_button = QtGui.QPushButton('Find events', parent = self._controls_pane)
         self._find_events_button.setGeometry(100,0,100,100)

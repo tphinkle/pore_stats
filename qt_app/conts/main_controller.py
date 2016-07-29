@@ -6,6 +6,7 @@ import rp_controller
 import PyQt4.QtCore as QtCore
 from PyQt4.QtGui import *
 
+
 class MainController(QtCore.QObject):
 
     def __init__(self, main_model, main_view):

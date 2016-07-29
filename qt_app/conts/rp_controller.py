@@ -31,13 +31,12 @@ class RPController(QtCore.QObject):
 
             # Create new RP model and set file
             new_rp_model = self._main_model.create_rp_model(self)
-            
+
             new_rp_model.set_active_file(file_path)
 
 
             # Create new RP view, subscribe view to model
             new_rp_view = self._main_view.create_rp_view(parent_model = new_rp_model)
-            new_rp_model.add_subscriber(new_rp_view)
 
             # Connect signals to slots
             self.add_rp_slots(new_rp_view, new_rp_model)
@@ -51,6 +50,14 @@ class RPController(QtCore.QObject):
 
 
     def add_rp_slots(self, rp_view, rp_model):
+        rp_model.busy.connect(lambda busy: self.enable_ui(not busy, rp_model, rp_view))
+        rp_model.event_added.connect(lambda event:\
+            self.plot_event(event, rp_model, rp_view))
+        rp_model.targeted_event_changed.connect(lambda targeted_event:\
+            self.plot_targeted_event(targeted_event, rp_model, rp_view))
+        rp_model.events_cleared.connect(lambda:\
+            self.clear_events(rp_model, rp_view))
+
         rp_view._main_plot.sigRangeChanged.connect(lambda rng: \
             self.main_plot_range_changed(rng, rp_model, rp_view))
 
@@ -71,6 +78,8 @@ class RPController(QtCore.QObject):
 
         return
 
+
+
     def set_rp_view_defaults(self, rp_view):
         rp_view._baseline_avg_length_field.setText('1000')
         rp_view._trigger_sigma_threshold_field.setText('3')
@@ -78,23 +87,77 @@ class RPController(QtCore.QObject):
 
         return
 
-    def data_toggle_clicked(self, clicked, rp_model, rp_view):
-        checked=rp_view._data_toggle.isChecked()
-        rp_model.data_active=checked
-        pass
+
+    def enable_ui(self, enable, rp_model, rp_view):
+        rp_view.enable_ui(enable)
+        return
+
+    def plot_event(self, event, rp_model, rp_view):
+        pen = QPen(QColor(50,200,50))
+
+        rp_view._event_plot_items.append(rp_view._main_plot.plot(event._data, pen = pen))
+
+        return
+
+    def plot_targeted_event(self, targeted_event, rp_model, rp_view):
+        rp_view._event_plot_item.setData(targeted_event._data)
+
 
     def main_plot_range_changed(self, rng, rp_model, rp_view):
         viewRange = rng.viewRange()
 
         ti = viewRange[0][0]
         tf = viewRange[0][1]
-        rp_model.set_t_range((ti, tf))
+
+        t_range = (ti,tf)
+
+
+        self.plot_main_data(rp_view, rp_model, t_range)
+
+        self.plot_baseline_data(rp_view, rp_model, t_range)
 
         return
 
     def show_baseline_button_clicked(self, clicked, rp_model, rp_view):
-        rp_model.calculate_baseline()
+        viewRange = rp_view._main_plot.viewRange()
+
+        ti = viewRange[0][0]
+        tf = viewRange[0][1]
+
+        t_range = (ti,tf)
+
+        rp_model.load_baseline_ts()
+
+        self.plot_baseline_data(rp_view, rp_model, t_range)
+
         return
+
+    def plot_main_data(self, rp_view, rp_model, t_range):
+        if rp_model._main_ts._display_ready == True:
+            main_data = rp_model.get_main_display_data(t_range)
+            if main_data != None:
+                rp_view._main_plot_item.setData(main_data[:,0], main_data[:,1])
+
+        return
+
+    def plot_baseline_data(self, rp_view, rp_model, t_range):
+        if rp_model._baseline_ts._display_ready == True:
+            baseline_data = rp_model.get_baseline_display_data(t_range)
+
+            if baseline_data != None:
+                rp_view._baseline_plot_item.setData(baseline_data[:,0], baseline_data[:,1])
+
+        return
+
+    def clear_events(self, rp_model, rp_view):
+        for event_plot_item in rp_view._event_plot_items:
+            event_plot_item.clear()
+        rp_view._event_plot_items = []
+
+        return
+
+
+
 
     def find_events_button_clicked(self, clicked, rp_model, rp_view):
         rp_model.find_events()

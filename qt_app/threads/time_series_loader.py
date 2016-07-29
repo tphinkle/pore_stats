@@ -14,7 +14,7 @@ class TimeSeriesLoader(QtCore.QThread):
         self._decimation_factor = time_series._decimation_factor
         self._decimation_tiers = time_series._decimation_tiers
 
-        if time_series._full_data:
+        if time_series._full_data != None:
             self._full_data = time_series._full_data
         else:
             self._full_data = None
@@ -35,7 +35,7 @@ class TimeSeriesLoader(QtCore.QThread):
             -
         """
 
-        if not self._full_data:
+        if self._full_data == None:
             self._full_data = rp_file.get_data(self._file_path)
             self.emit(QtCore.SIGNAL('add_tier(PyQt_PyObject, int)'), self._full_data, 0)
 

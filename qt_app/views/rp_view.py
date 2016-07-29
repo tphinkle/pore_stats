@@ -26,6 +26,8 @@ class RPView(QtGui.QWidget):
 
         self.setup_layout()
 
+        self._event_plot_items = []
+
 
 
         self.show()
@@ -114,11 +116,6 @@ class RPView(QtGui.QWidget):
         self._max_search_length_field = QtGui.QLineEdit(parent = self._controls_pane)
         self._max_search_length_field.setGeometry(200,100,100,100)
 
-
-
-
-
-
         return
 
 
@@ -141,26 +138,10 @@ class RPView(QtGui.QWidget):
 
         return
 
-
-    def receive_update_file_path(self, path):
-        self._subwindow.setWindowTitle('Resistive pulse--'+path)
-        return
-
-    def receive_update_data(self, data):
-        self._plot.setData(data)
-
-        return
-
-    def receive_update_baseline_data(self, baseline_data):
-        self._baseline_plot.setData(baseline_data[:,0], baseline_data[:,1])
-        self._thresh_high_plot.setData(baseline_data[:,0], baseline_data[:,2])
-        self._thresh_low_plot.setData(baseline_data[:,0], baseline_data[:,3])
-
-        return
-
-    def receive_update_targeted_event(self, targeted_event_data, points = []):
-        self._event_plot_item.setData(targeted_event_data)
-        for point in points:
-            pass
-
+    def enable_ui(self, enable):
+        self._show_baseline_button.setEnabled(enable)
+        self._find_events_button.setEnabled(enable)
+        self._baseline_avg_length_field.setEnabled(enable)
+        self._trigger_sigma_threshold_field.setEnabled(enable)
+        self._max_search_length_field.setEnabled(enable)
         return

@@ -8,6 +8,7 @@ import rp_file
 import math
 
 class TimeSeriesLoader(QtCore.QThread):
+    loaders = 0
     def __init__(self, time_series):
         super(TimeSeriesLoader, self).__init__()
         self._max_pts_returned = time_series._max_pts_returned
@@ -21,6 +22,9 @@ class TimeSeriesLoader(QtCore.QThread):
 
         if time_series._file_path:
             self._file_path = time_series._file_path
+
+        self.loaders+=1
+        self._id = self.loaders
 
 
     def __del__(self):
@@ -40,7 +44,6 @@ class TimeSeriesLoader(QtCore.QThread):
             self.emit(QtCore.SIGNAL('add_tier(PyQt_PyObject, int)'), self._full_data, 0)
 
         for i in xrange(self._decimation_tiers-1, 0, -1):
-            print 'loaded tier', i,' out of ', self._decimation_tiers
             current_decimation_factor = self._decimation_factor**i
             decimated_data = ts.decimate_data(self._full_data, current_decimation_factor)
             self.emit(QtCore.SIGNAL('add_tier(PyQt_PyObject, int)'), decimated_data, i)

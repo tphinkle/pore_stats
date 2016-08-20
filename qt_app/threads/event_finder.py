@@ -1,5 +1,6 @@
 import PyQt4.QtCore as QtCore
 import sys
+import traceback
 sys.path.append('/home/preston/Desktop/Science/Research/pore_stats/qt_app/')
 sys.path.append('/home/preston/Desktop/Science/Research/pore_stats/')
 import time_series as ts
@@ -57,7 +58,7 @@ class EventFinder(QtCore.QObject):
 
         print 'raw_offset = ', raw_offset
 
-
+        print 'search shape: ', self._search_data.shape
 
         try:
             while keep_going == True:
@@ -134,6 +135,12 @@ class EventFinder(QtCore.QObject):
                             else:
                                 stop_index+=1
 
+                            if stop_index-start_index >= self._max_search_length:
+                                stop_trigger_found = True
+                                index = start_index+self._max_search_length
+                                baseline = rp.get_baseline(self._search_data, index, self._baseline_avg_length,
+                                                      self._trigger_sigma_threshold)
+
                         index=stop_index
                         #event_indices=np.vstack((event_indices,
                                       #np.array([start_index, stop_index])))
@@ -148,8 +155,22 @@ class EventFinder(QtCore.QObject):
                         #print start_index, ',', stop_index, events[-1]._data[0,0], ',', events[-1]._data[-1,0]
 
                         # Replace event with baseline
-                        self._search_data[start_index:stop_index,1]=self._search_data[start_index-\
-                            (stop_index-start_index)-self._baseline_avg_length:start_index-self._baseline_avg_length,1]
+
+                        replace_start_index = start_index - (stop_index - start_index) - self._baseline_avg_length
+                        replace_stop_index = start_index - self._baseline_avg_length
+
+                        if replace_start_index >= 0:
+                            # Good
+                            self._search_data[start_index:stop_index,1] =\
+                                self._search_data[replace_start_index:replace_stop_index,1]
+                        else:
+                            # Replacement interval starts at negative index. Replace with
+                            # as much baseline as possible.
+                            interval_length = start_index
+                            intervals = (stop_index - start_index)/start_index+1
+                            for i in xrange(intervals):
+                                self._search_data[i*start_index:(i+1)*start_index,1] = \
+                                    self._search_data[:start_index,1]
 
 
 
@@ -157,12 +178,19 @@ class EventFinder(QtCore.QObject):
                     elif index-start_index >= self._max_search_length:
                         stop_trigger_found = True
                         index = start_index+self._max_search_length
-                        baseline = get_baseline(search_data, index, self._baseline_avg_length,
+                        baseline = rp.get_baseline(self._search_data, index, self._baseline_avg_length,
                                               self._trigger_sigma_threshold)
 
 
                     index += 1
 
-        except:
+        except Exception as inst:
+            print 'error! index = ', index, 'start_index = ', start_index, 'stop_index = ',\
+                stop_index
+            print 'line num = ', sys.exc_info()[2].tb_lineno
+            print(type(inst))
+            print(inst.args)
+            print(inst)
+
             self.emit(QtCore.SIGNAL('finished()'))
             return

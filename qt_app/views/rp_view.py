@@ -9,6 +9,8 @@ import PyQt4.QtGui as QtGui
 
 class RPView(QtGui.QWidget):
 
+    key_pressed = QtCore.pyqtSignal('PyQt_PyObject')
+
     # Gray pen
     pen_0 = QtGui.QPen(QtGui.QColor(200,200,200))
 
@@ -37,7 +39,7 @@ class RPView(QtGui.QWidget):
         self.setup_subwindow()
         self.setup_main_plot()
 
-        self.setup_event_plot()
+        self.setup_targeted_event_plot()
         self.setup_controls()
 
         self.setup_layout()
@@ -48,8 +50,10 @@ class RPView(QtGui.QWidget):
 
 
 
-
         self.show()
+
+    def keyPressEvent(self, key):
+        self.emit(QtCore.SIGNAL('key_pressed(PyQt_PyObject)'), key)
 
 
     def setup_subwindow(self):
@@ -94,6 +98,12 @@ class RPView(QtGui.QWidget):
         self._targeted_event_plot_item.setPen(self.pen_4)
         self._main_plot.addItem(self._targeted_event_plot_item)
 
+        self._targeted_event_marker_scatter_item = pg.ScatterPlotItem()
+        self._targeted_event_marker_scatter_item.setZValue(10)
+        self._targeted_event_marker_scatter_item.setPen(self.pen_4)
+        self._targeted_event_marker_scatter_item.setSymbol('x')
+        self._main_plot.addItem(self._targeted_event_marker_scatter_item)
+
         self._event_plot_items = []
 
         main_plot_policy = QtGui.QSizePolicy()
@@ -115,27 +125,27 @@ class RPView(QtGui.QWidget):
         return
 
 
-    def setup_event_plot(self):
-        self._event_plot = pg.PlotWidget(parent = self)
-        event_plot_size_policy = QtGui.QSizePolicy()
-        event_plot_size_policy.setVerticalStretch(2)
-        event_plot_size_policy.setHorizontalStretch(1)
-        event_plot_size_policy.setVerticalPolicy(QtGui.QSizePolicy.Expanding)
-        event_plot_size_policy.setHorizontalPolicy(QtGui.QSizePolicy.Expanding)
-        self._event_plot.setSizePolicy(event_plot_size_policy)
+    def setup_targeted_event_plot(self):
+        self._targeted_event_plot = pg.PlotWidget(parent = self)
+        targeted_event_plot_size_policy = QtGui.QSizePolicy()
+        targeted_event_plot_size_policy.setVerticalStretch(2)
+        targeted_event_plot_size_policy.setHorizontalStretch(1)
+        targeted_event_plot_size_policy.setVerticalPolicy(QtGui.QSizePolicy.Expanding)
+        targeted_event_plot_size_policy.setHorizontalPolicy(QtGui.QSizePolicy.Expanding)
+        self._targeted_event_plot.setSizePolicy(targeted_event_plot_size_policy)
 
-        self._event_plot_item = pg.PlotDataItem()
-        self._event_plot.addItem(self._event_plot_item)
+        self._targeted_event_plot_item = pg.PlotDataItem()
+        self._targeted_event_plot.addItem(self._targeted_event_plot_item)
 
 
-        parent_geometry = self._event_plot.geometry()
+        parent_geometry = self._targeted_event_plot.geometry()
 
-        self._next_event_button = QtGui.QPushButton('<', parent = self._event_plot)
+        self._next_event_button = QtGui.QPushButton('<', parent = self._targeted_event_plot)
         self._next_event_button.setGeometry(0,100,50,50)
         self._next_event_button.setStyleSheet('background-color: rgba(255,255,255,0)')
 
 
-        self._previous_event_button = QtGui.QPushButton('>', parent = self._event_plot)
+        self._previous_event_button = QtGui.QPushButton('>', parent = self._targeted_event_plot)
         self._previous_event_button.setGeometry(200,100,50,50)
         self._previous_event_button.setStyleSheet('background-color: rgba(255,255,255,0)')
 
@@ -172,6 +182,9 @@ class RPView(QtGui.QWidget):
 
         self._save_events_button = QtGui.QPushButton('Save\nevents', parent = self._controls_pane)
         self._save_events_button.setGeometry(400,0,100,100)
+
+        self._predict_button = QtGui.QPushButton('Predict\nevents', parent = self._controls_pane)
+        self._predict_button.setGeometry(500,0,100,100)
 
         # Set up checkboxes
         self._use_main_checkbox = QtGui.QCheckBox('Use raw', parent = self._controls_pane)
@@ -218,7 +231,7 @@ class RPView(QtGui.QWidget):
     def setup_layout(self):
         self._layout_0 = QtGui.QGridLayout()
         self._layout_0.addWidget(self._main_plot, 0, 0, 1, 2)
-        self._layout_0.addWidget(self._event_plot, 1, 0)
+        self._layout_0.addWidget(self._targeted_event_plot, 1, 0)
         self._layout_0.addWidget(self._controls_pane, 1, 1)
         self.setLayout(self._layout_0)
 
@@ -229,17 +242,19 @@ class RPView(QtGui.QWidget):
     def show(self):
         self._subwindow.show()
         self._main_plot.show()
-        self._event_plot.show()
+        self._targeted_event_plot.show()
 
         return
 
 
     def enable_ui(self, enable):
+        self._show_main_data_button.setEnabled(enable)
         self._show_baseline_button.setEnabled(enable)
         self._find_events_button.setEnabled(enable)
         self._filter_data_button.setEnabled(enable)
         self._find_events_button.setEnabled(enable)
         self._save_events_button.setEnabled(enable)
+        self._predict_button.setEnabled(enable)
 
         self._baseline_avg_length_field.setEnabled(enable)
         self._trigger_sigma_threshold_field.setEnabled(enable)
@@ -248,5 +263,7 @@ class RPView(QtGui.QWidget):
 
         self._use_main_checkbox.setEnabled(enable)
         self._use_filtered_checkbox.setEnabled(enable)
+
+
 
         return

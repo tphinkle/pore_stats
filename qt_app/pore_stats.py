@@ -28,7 +28,9 @@ class App(PyQt4.QtGui.QApplication):
 
 def main():
     app = App(sys.argv)
-    sys.exit(app.exec_())
+    app.exec_()
+    sys.exit()
+    #sys.exit(app.exec_())
 
 
 if __name__ == '__main__':

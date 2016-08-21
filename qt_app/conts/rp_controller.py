@@ -1,3 +1,24 @@
+# /qt_app/conts/main_controller.py
+"""
+
+RESISTIVE PULSE
+
+* Contains RPController class.
+
+* Sections:
+    1. Imports
+    2. Classes
+        - RPController(QtCore.QObject)
+
+"""
+
+
+
+
+
+"""
+Imports
+"""
 import sys
 sys.path.append('/home/preston/Desktop/Science/Research/pore_stats/')
 import resistive_pulse as rp
@@ -10,7 +31,20 @@ import time
 import csv
 import numpy as np
 
+"""
+Classes
+"""
+
 class RPController(QtCore.QObject):
+
+    """
+    This is the Controller that handles all resistive pulse functionality. The user interacts
+    with the GUI via signals such as clicks and key presses. RPController makes signal/slot
+    connections relevant to resistive pulse analysis in its constructor. User interactions are
+    routed to RPController via these signals. RPController then interprets the signals and
+    asks the resistive pulse Model to update its state. RPController directly updates the View
+    based on the Model state change.
+    """
 
     # KEY MAPPINGS
     KEY_1 = 49
@@ -18,10 +52,9 @@ class RPController(QtCore.QObject):
     KEY_LARROW = 16777234
     KEY_RARROW = 16777236
 
+    # Temp placement for training data path
     ML_FILE_PATH = '/home/preston/Desktop/Science/Research/pore_stats/qt_app/ML/event_predictions_train'
 
-
-    rp_max_data_points = 100000000
 
     def __init__(self, main_model, main_view):
         self._main_model = main_model
@@ -32,37 +65,44 @@ class RPController(QtCore.QObject):
     def add_rp(self):
         """
         * Description: Creates a resistive pulse UI group and model.
-        * Return: None.
+        * Return:
         * Arguments:
         """
-        # Get file name to load
+
+        # Open a QFileDialog to see which file should be opened
         file_path = QtGui.QFileDialog.getOpenFileName(parent = self._main_view,\
             directory = '/home/preston/Desktop/Science/Research/cancer_cells/data/')
 
         if file_path:
 
-            # Create new RP model and set file
-            new_rp_model = self._main_model.create_rp_model(self)
+            try:
 
-            new_rp_model.set_active_file(file_path)
+                # Create new RP model and set file
+                new_rp_model = self._main_model.create_rp_model(self)
+
+                new_rp_model.set_active_file(file_path)
 
 
-            # Create new RP view, subscribe view to model
-            new_rp_view = self._main_view.create_rp_view(parent_model = new_rp_model)
+                # Create new RP view, subscribe view to model
+                new_rp_view = self._main_view.create_rp_view(parent_model = new_rp_model)
 
-            # Connect signals to slots
-            self.add_rp_slots(new_rp_model, new_rp_view)
+                # Connect signals to slots
+                self.add_rp_slots(new_rp_model, new_rp_view)
 
-            # Set defaults
-            self.set_rp_view_defaults(new_rp_view)
+                # Set defaults
+                self.set_rp_view_defaults(new_rp_view)
 
-            new_rp_model.load_main_ts()
+                new_rp_model.load_main_ts()
 
-            new_rp_model._main_ts._visible = True
+                new_rp_model._main_ts._visible = True
 
-            self.plot_main_data(new_rp_model, new_rp_view, (0,1))
+                self.plot_main_data(new_rp_model, new_rp_view, (0,1))
 
-            new_rp_view.setWindowTitle('Resistive Pulse--'+file_path)
+                new_rp_view.setWindowTitle('Resistive Pulse--'+file_path)
+
+            except:
+                file_type = file_path.split('.')[-1]
+                raise TypeError('Could not open file of type ' + str(file_type))
 
         return
 

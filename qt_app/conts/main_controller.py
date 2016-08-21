@@ -1,3 +1,22 @@
+# /qt_app/conts/main_controller.py
+"""
+
+RESISTIVE PULSE
+
+* Contains MainController class.
+
+* Sections:
+    1. Imports
+    2. Classes
+        - MainController(QtCore.QObject)
+
+"""
+
+"""
+Imports
+"""
+
+
 import sys
 sys.path.append('/home/preston/Desktop/Science/Research/pore_stats/')
 import resistive_pulse as rp
@@ -6,8 +25,17 @@ import rp_controller
 import PyQt4.QtCore as QtCore
 from PyQt4.QtGui import *
 
+"""
+Classes
+"""
 
 class MainController(QtCore.QObject):
+    """
+    The main controller in the model, view, controller paradigm for gui programming. The
+    two functions of the class are to hold and instantiate sub-controllers (e.g.
+    RPController) and to set up signals and slots at the QMainWindow level. Most program
+    logic is handled by specialized sub-controllers.
+    """
 
     def __init__(self, main_model, main_view):
         super(MainController, self).__init__()
@@ -22,7 +50,7 @@ class MainController(QtCore.QObject):
     def setup_connections(self):
         """
         * Description: Call function for setting up all connections.
-        * Return:None
+        * Return:
         * Arguments:
         """
         self.setup_bar_connections()
@@ -32,9 +60,9 @@ class MainController(QtCore.QObject):
     def setup_bar_connections(self):
         """
         * Description: Connections for UI MenuBar signals.
-        * Return: None
+        * Return:
         * Arguments:
         """
-        self._main_view._rp_load_file_action.triggered.connect(self._rp_controller.add_rp)
+        self._main_view._rp_load_file_action.triggered.connect(self.create_rp_controller)
 
         return

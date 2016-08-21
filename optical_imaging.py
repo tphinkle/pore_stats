@@ -80,6 +80,20 @@ class OpticalEvent:
 
         return
 
+    def get_detection(self, t):
+        for detection in self._detections:
+            if detection._tf == t:
+                det = detection
+                break
+            else:
+                pass
+
+        try:
+            return det
+        except:
+            print 'Could not find detection!'
+            return None
+
     def sort_detections(self):
 
         return

@@ -1,5 +1,4 @@
 # /qt_app/conts/main_controller.py
-aksjdf;askdjf;askjdflkajs;df
 
 """
 * Contains MainController class.

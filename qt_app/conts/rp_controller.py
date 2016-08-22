@@ -58,34 +58,34 @@ class RPController(QtCore.QObject):
         file_path = QtGui.QFileDialog.getOpenFileName(parent = self._main_view,\
             directory = RPController.default_rpfile_directory)
 
-        try:
-            # Create new RP Model and set file
-            new_rp_model = self._main_model.create_rp_model(self)
-            new_rp_model.set_active_file(file_path)
 
-            # Create new RP View, subscribe View to Model
-            new_rp_view = self._main_view.create_rp_view()#parent_model = new_rp_model)
+        # Create new RP Model and set file
+        new_rp_model = self._main_model.create_rp_model(self)
+        new_rp_model.set_active_file(file_path)
 
-            # Connect signals to slots
-            self.add_rp_slots(new_rp_model, new_rp_view)
+        # Create new RP View, subscribe View to Model
+        new_rp_view = self._main_view.create_rp_view()#parent_model = new_rp_model)
 
-            # Set default state for View
-            self.set_rp_view_defaults(new_rp_view)
+        # Connect signals to slots
+        self.add_rp_slots(new_rp_model, new_rp_view)
 
-            # Tell the model to load the time series data
-            new_rp_model.load_main_ts()
+        # Set default state for View
+        self.set_rp_view_defaults(new_rp_view)
 
-            # Make sure the main time series is set to visible when the data is ready
-            self.toggle_show_main_ts(new_rp_model, new_rp_view)
+        # Tell the model to load the time series data
+        new_rp_model.load_main_ts()
 
-            new_rp_view.setWindowTitle('Resistive Pulse--'+file_path)
+        # Make sure the main time series is set to visible when the data is ready
+        self.toggle_show_main_ts(new_rp_model, new_rp_view)
 
-        except:
-            # Couldn't open the file; most likely due to unrecognizable file type.
-            file_type = file_path.split('.')[-1]
-            raise TypeError('Could not open file of type ' + str(file_type))
+        new_rp_view.setWindowTitle('Resistive Pulse--'+file_path)
 
-            return
+
+        # Couldn't open the file; most likely due to unrecognizable file type.
+        #file_type = file_path.split('.')[-1]
+        #raise TypeError('Could not open file of type ' + str(file_type))
+
+        return
 
 
     def add_rp_slots(self, rp_model, rp_view):
@@ -261,6 +261,8 @@ class RPController(QtCore.QObject):
 
         if rp_model._filtered_ts._visible == True:
             self.plot_filtered_data(rp_model, rp_view, t_range)
+
+        self.update_main_plot_text(rp_model, rp_view)
 
         return
 
@@ -642,8 +644,8 @@ class RPController(QtCore.QObject):
     def plot_targeted_event(self, rp_model, rp_view, targeted_event):
         """
         * Description: Commands the rp_view to update the rp_view._targeted_event_plot_item
-          with the newly targeted event, and to plot an x over the new targeted event in
-          the main plot.
+          with the newly targeted event, to plot an x over the new targeted event in
+          the main plot, and to update the rp_view._main_plot_text.
         * Return:
         * Arguments:
             - targeted_event: The RPEvent that is targeted.
@@ -659,7 +661,12 @@ class RPController(QtCore.QObject):
         x = float((np.max(targeted_event._data[:,0])+np.min(targeted_event._data[:,0]))/2.)
         y = float(np.max(targeted_event._data[:,1]))
 
+        self.update_main_plot_text(rp_model, rp_view)
+        QtCore.QCoreApplication.processEvents()
+        #rp_view._targeted_event_marker_scatter_item.clear()
         rp_view._targeted_event_marker_scatter_item.setData([x], [y])
+
+
 
         return
 
@@ -730,6 +737,9 @@ class RPController(QtCore.QObject):
         event_plot_item.setPen(rp_view.pen_2)
         if rp_model._event_manager.is_targeted(event):
             rp_view._targeted_event_plot_item.setPen(rp_view.pen_2)
+
+        self.update_main_plot_text(rp_model, rp_view)
+
         return
 
     def unselect_event(self, rp_model, rp_view, event):
@@ -745,6 +755,9 @@ class RPController(QtCore.QObject):
         event_plot_item.setPen(rp_view.pen_4)
         if rp_model._event_manager.is_targeted(event):
             rp_view._targeted_event_plot_item.setPen(rp_view.pen_4)
+
+        self.update_main_plot_text(rp_model, rp_view)
+
         return
 
     def get_event_plot_item(self, rp_model, rp_view, event):
@@ -810,5 +823,30 @@ class RPController(QtCore.QObject):
                 for row in event._data:
                     writer.writerow([row[0], row[1]])
 
+
+        return
+
+
+    def update_main_plot_text(self, rp_model, rp_view):
+        """
+        * Description: Updates the text in the top right of the rp_view._main_plot that
+          contains info about the current decimation value, total events found, etc.
+        * Return:
+        * Arguments:
+        """
+        line_1 = 'Decimation factor: ' + str(rp_model._main_ts._current_decimation_factor) + \
+        'x'
+
+        if len(rp_model._event_manager._events) == 0:
+            line_2 = 'Events total: --'
+            line_3 = 'Events selected: --'
+            line_4 = 'Event targeted: --'
+        else:
+            line_2 = 'Events total: ' + str(len(rp_model._event_manager._events))
+            line_3 = 'Events selected: ' + str(len(rp_model._event_manager._selected_events))
+            line_4 = 'Event targeted: ' + str(rp_model._event_manager._targeted_event._id)
+
+        rp_view._main_plot_text_item.setText(line_1 + '\n' + line_2 + '\n' + line_3 + \
+        '\n' + line_4)
 
         return

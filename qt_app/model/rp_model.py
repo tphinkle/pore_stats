@@ -1,9 +1,5 @@
 import sys
-
 import PyQt4.QtCore as QtCore
-
-PORE_STATS_DIR = '/home/preston/Desktop/Science/Research/pore_stats/'
-sys.path.append(PORE_STATS_DIR)
 import resistive_pulse as rp
 import rp_file
 import time_series as ts
@@ -14,6 +10,9 @@ import copy
 import numpy as np
 import scipy.signal
 import rp_event_manager
+
+PORE_STATS_DIR = '/home/preston/Desktop/Science/Research/pore_stats/'
+sys.path.append(PORE_STATS_DIR)
 
 class RPModel(QtCore.QObject):
 
@@ -40,14 +39,37 @@ class RPModel(QtCore.QObject):
 
         self._baseline_ts = ts.TimeSeries(key_parameters = ['baseline_avg_length'])
 
-        self._pos_thresh_ts = ts.TimeSeries(['baseline_avg_length', 'trigger_sigma_threshold'])
+        self._pos_thresh_ts = ts.TimeSeries(key_parameters = ['baseline_avg_length', 'trigger_sigma_threshold'])
 
-        self._neg_thresh_ts = ts.TimeSeries(['baseline_avg_length', 'trigger_sigma_threshold'])
+        self._neg_thresh_ts = ts.TimeSeries(key_parameters = ['baseline_avg_length', 'trigger_sigma_threshold'])
 
-        self._filtered_ts = ts.TimeSeries(['filter_frequency'])
+        self._filtered_ts = ts.TimeSeries(key_parameters = ['filter_frequency'])
 
         self._event_manager = rp_event_manager.RPEventManager()
 
+    def load_ts(self, ts):
+        new_ts_loader = time_series_loader.TimeSeriesLoader(ts)
+        self._time_series_loaders.append(new_ts_loader)
+        self.connect(new_ts_loader, QtCore.SIGNAL('started()'), self.set_busy)
+        self.connect(new_ts_loader, QtCore.SIGNAL('finished()'), self.set_not_busy)
+        self.connect(new_ts_loader, QtCore.SIGNAL('finished()'),\
+                     lambda: self.remove_ts_loader(new_ts_loader._id))
+
+        self.connect(new_ts_loader, QtCore.SIGNAL('add_tier(PyQt_PyObject, int)'),\
+         ts.add_decimated_data_tier)
+
+        new_ts_loader.start()
+
+    def load_main_ts(self):
+
+        self._main_ts.initialize(file_path = self._active_file._file_path,
+                                 full_data = None,
+                                 max_pts_returned = self.display_decimation_threshold,
+                                 decimation_factor = self.decimation_factor)
+
+        self.load_ts(self._main_ts)
+
+        return
 
     def save_events(self):
         file_path = self._active_file._file_path
@@ -76,33 +98,13 @@ class RPModel(QtCore.QObject):
         return
 
 
-    def load_ts(self, ts):
-        new_ts_loader = time_series_loader.TimeSeriesLoader(ts)
-        self._time_series_loaders.append(new_ts_loader)
-        self.connect(new_ts_loader, QtCore.SIGNAL('started()'), self.set_busy)
-        self.connect(new_ts_loader, QtCore.SIGNAL('finished()'), self.set_not_busy)
-        self.connect(new_ts_loader, QtCore.SIGNAL('finished()'),\
-                     lambda: self.remove_ts_loader(new_ts_loader._id))
 
-        self.connect(new_ts_loader, QtCore.SIGNAL('add_tier(PyQt_PyObject, int)'),\
-         ts.add_decimated_data_tier)
-
-        new_ts_loader.start()
 
     def remove_ts_loader(self, id):
         self._time_series_loaders = [ts for ts in self._time_series_loaders if ts._id != id]
         return
 
-    def load_main_ts(self):
 
-        self._main_ts.initialize(file_path = self._active_file._file_path,
-                                 full_data = None,
-                                 max_pts_returned = self.display_decimation_threshold,
-                                 decimation_factor = self.decimation_factor)
-
-        self.load_ts(self._main_ts)
-
-        return
 
 
 

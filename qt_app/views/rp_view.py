@@ -26,6 +26,9 @@ class RPView(QtGui.QWidget):
     # Red pen
     pen_4 = QtGui.QPen(QtGui.QColor(200, 50, 50))
 
+    # Orange color
+    main_plot_text_color = QtGui.QColor(230, 100, 60)
+
     def __init__(self, parent_widget = None, parent_model = None):
         self._parent_widget = parent_widget
         self._parent_model = parent_model
@@ -105,6 +108,24 @@ class RPView(QtGui.QWidget):
         self._main_plot.addItem(self._targeted_event_marker_scatter_item)
 
         self._event_plot_items = []
+
+        self._main_plot_text_item = QtGui.QTextEdit(parent = self._main_plot)
+        self._main_plot_text_item.setReadOnly(True)
+        self._main_plot_text_item.setAlignment(QtCore.Qt.AlignLeft)
+        self._main_plot_text_item.viewport().setAutoFillBackground(False)
+        self._main_plot_text_item.setFrameStyle(QtGui.QFrame.NoFrame)
+        self._main_plot_text_item.setTextColor(RPView.main_plot_text_color)
+        self._main_plot_text_item.setText('')
+        self._main_plot_text_item.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
+        self._main_plot_text_item.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents);
+
+
+
+        self._main_plot_layout = QtGui.QGridLayout(self._main_plot)
+
+        self._main_plot_layout.addWidget(self._main_plot_text_item, 0, 1, QtCore.Qt.AlignRight)
+        self._main_plot_layout.setColumnStretch(0,1)
+
 
         main_plot_policy = QtGui.QSizePolicy()
         main_plot_policy.setVerticalStretch(4)
@@ -263,7 +284,6 @@ class RPView(QtGui.QWidget):
 
         self._use_main_checkbox.setEnabled(enable)
         self._use_filtered_checkbox.setEnabled(enable)
-
 
 
         return

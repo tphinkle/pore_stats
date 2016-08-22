@@ -1,8 +1,5 @@
 # /qt_app/conts/main_controller.py
 """
-
-RESISTIVE PULSE
-
 * Contains MainController class.
 
 * Sections:
@@ -42,7 +39,7 @@ class MainController(QtCore.QObject):
         self._main_model = main_model
         self._main_view = main_view
 
-        self._rp_controller = rp_controller.RPController(self._main_model, self._main_view)
+        self._controllers = []
 
         self.setup_connections()
 
@@ -64,5 +61,17 @@ class MainController(QtCore.QObject):
         * Arguments:
         """
         self._main_view._rp_load_file_action.triggered.connect(self.create_rp_controller)
+
+        return
+
+    def create_rp_controller(self):
+        """
+        * Description: Slot for QMenuBar 'ResistivePulse' button. Creates a RPController,
+          which then creates associated RPModel and RPView.
+        * Return: None
+        * Arguments:
+        """
+        self._controllers.append(rp_controller.RPController(self._main_model,\
+         self._main_view))
 
         return

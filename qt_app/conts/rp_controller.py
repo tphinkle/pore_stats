@@ -499,6 +499,17 @@ class RPController(QtCore.QObject):
         return
 
     def predict_select_unselect(self, rp_model, rp_view):
+        """
+        * Description: All-in-one button that makes predictions about whether present
+          events will be accepted or rejected. In order for this to work, there must be a
+          pickled, *trained* model in the './ML/params/' folder. First, an RPPredictor
+          class is instantiated and the model is loaded from the parameter file. The
+          RPPredictor then calculates the features from the list of events, and finally
+          makes predictions about acceptance/rejectance. Events have their
+          selected/unselected status changed.
+        * Return:
+        * Arguments:
+        """
         predictor = rp_predictor.RPPredictor()
         predictor.load_model('/home/preston/Desktop/Science/Research/pore_stats/qt_app/ML/params/interp_100_0.pkl')
         predictor._test_features = predictor.get_features(rp_model._event_manager._events)
@@ -519,6 +530,14 @@ class RPController(QtCore.QObject):
 
 
     def target_previous_event(self, rp_model, rp_view):
+        """
+        * Description: Sets the targeted event to the event nearest the currently targeted
+          event on the left. First, tells the rp_model to set the targeted event, then
+          calls the relevant method to change the status of the plots reflecting the new
+          targeted event.
+        * Return:
+        * Arguments:
+        """
         rp_model._event_manager.decrement_targeted_event()
         targeted_event = rp_model._event_manager._targeted_event
 
@@ -526,6 +545,14 @@ class RPController(QtCore.QObject):
         return
 
     def target_next_event(self, rp_model, rp_view):
+        """
+        * Description: Sets the targeted event to the event nearest the currently targeted
+          event on the right. First, tells the rp_model to set the targeted event, then
+          calls the relevant method to change the status of the plots reflecting the new
+          targeted event.
+        * Return:
+        * Arguments:
+        """
         rp_model._event_manager.increment_targeted_event()
         targeted_event = rp_model._event_manager._targeted_event
 
@@ -609,11 +636,25 @@ class RPController(QtCore.QObject):
         return
 
     def plot_new_event(self, rp_model, rp_view, event):
+        """
+        * Description: Issues a command to rp_view to add a new event_plot_item.
+        * Return:
+        * Arguments:
+            - event: The event to be plotted.
+        """
         rp_view.plot_new_event(event._data, rp_model._event_manager.is_selected(event))
 
         return
 
     def plot_targeted_event(self, rp_model, rp_view, targeted_event):
+        """
+        * Description: Commands the rp_view to update the rp_view._targeted_event_plot_item
+          with the newly targeted event, and to plot an x over the new targeted event in
+          the main plot.
+        * Return:
+        * Arguments:
+            - targeted_event: The RPEvent that is targeted.
+        """
         pen = rp_view.pen_0
         if rp_model._event_manager.is_selected(targeted_event):
             pen = rp_view.pen_2
@@ -625,12 +666,20 @@ class RPController(QtCore.QObject):
         x = float((np.max(targeted_event._data[:,0])+np.min(targeted_event._data[:,0]))/2.)
         y = float(np.max(targeted_event._data[:,1]))
 
-
         rp_view._targeted_event_marker_scatter_item.setData([x], [y])
 
         return
 
     def main_plot_clicked(self, rp_model, rp_view, mouse_click):
+        """
+        * Description: Slot connected to signal when the rp_view._main_plot is clicked.
+          Checks coordinates of click and whether it is single or double. If coordinates
+          are over an event in the plot, will respond by targeting the event if the click
+          was single, or toggle select/unselect if the click was double.
+        * Return:
+        * Arguments:
+            - mouse_click: The mouseclick instance created by the user.
+        """
         click_coords = rp_view._main_plot.getPlotItem().getViewBox().mapSceneToView(mouse_click.scenePos())
         x_pos = click_coords.x()
 
@@ -652,19 +701,67 @@ class RPController(QtCore.QObject):
 
 
             if mouse_click.double():
-                self.toggle_event(rp_model, rp_view, clicked_event)
+                self.toggle_select_event(rp_model, rp_view, clicked_event)
 
             self.plot_targeted_event(rp_model, rp_view, clicked_event)
 
         return
 
-    def toggle_event(self, rp_model, rp_view, event):
+    def toggle_select_event(self, rp_model, rp_view, event):
+        """
+        * Description: Checks whether the event is selected or not, and calls the
+          appropriate method to change the selected status to the toggled value.
+        * Return:
+        * Arguments:
+            - event: The event to be toggled.
+        """
         if not rp_model._event_manager.is_selected(event):
             self.select_event(rp_model, rp_view, event)
         else:
             self.unselect_event(rp_model, rp_view, event)
 
+        return
+
+
+
+    def select_event(self, rp_model, rp_view, event):
+        """
+        * Description: Sets the event status to selected, affecting both the state
+          of the rp_model._event_manager and the plot in the rp_view.
+        * Return:
+        * Arguments:
+            -
+        """
+        rp_model._event_manager.select_event(event)
+        event_plot_item = self.get_event_plot_item(rp_model, rp_view, event)
+        event_plot_item.setPen(rp_view.pen_2)
+        if rp_model._event_manager.is_targeted(event):
+            rp_view._targeted_event_plot_item.setPen(rp_view.pen_2)
+        return
+
+    def unselect_event(self, rp_model, rp_view, event):
+        """
+        * Description: Sets the event status to unselected, affecting both the state
+          of the rp_model._event_manager and the plot in the rp_view.
+        * Return:
+        * Arguments:
+            -
+        """
+        rp_model._event_manager.unselect_event(event)
+        event_plot_item = self.get_event_plot_item(rp_model, rp_view, event)
+        event_plot_item.setPen(rp_view.pen_4)
+        if rp_model._event_manager.is_targeted(event):
+            rp_view._targeted_event_plot_item.setPen(rp_view.pen_4)
+        return
+
     def get_event_plot_item(self, rp_model, rp_view, event):
+        """
+        * Description: Connects the RPEvent instance to its associated PlotDataItem
+          in rp_view. Somewhat hacky and may need to be reworked.
+        * Return: Returns the event_plot_item.
+        * Arguments:
+            - event: The RPEvent whose plot_data_item we are looking for.
+        """
         event_plot_item = None
         epsilon = 1./rp_model._main_ts._sampling_frequency
         for plot_item in rp_view._event_plot_items:
@@ -674,24 +771,6 @@ class RPController(QtCore.QObject):
                 break
 
         return event_plot_item
-
-    def select_event(self, rp_model, rp_view, event):
-        print 'select!'
-        rp_model._event_manager.select_event(event)
-        event_plot_item = self.get_event_plot_item(rp_model, rp_view, event)
-        event_plot_item.setPen(rp_view.pen_2)
-        if rp_model._event_manager.is_targeted(event):
-            rp_view._targeted_event_plot_item.setPen(rp_view.pen_2)
-        return
-
-    def unselect_event(self, rp_model, rp_view, event):
-        print 'unselect!'
-        rp_model._event_manager.unselect_event(event)
-        event_plot_item = self.get_event_plot_item(rp_model, rp_view, event)
-        event_plot_item.setPen(rp_view.pen_4)
-        if rp_model._event_manager.is_targeted(event):
-            rp_view._targeted_event_plot_item.setPen(rp_view.pen_4)
-        return
 
 
 
@@ -704,6 +783,12 @@ class RPController(QtCore.QObject):
 
 
     def save_events_ML(self, rp_model, rp_view):
+        """
+        * Description: When events are saved, this function is also called so that the
+          data can be stored as training data to update the model.
+        * Return:
+        * Arguments:
+        """
 
         directory = '/home/preston/Desktop/Science/Research/pore_stats/qt_app/ML/'
 

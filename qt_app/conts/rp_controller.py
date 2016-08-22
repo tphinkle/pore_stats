@@ -1,8 +1,5 @@
-# /qt_app/conts/main_controller.py
+# /qt_app/conts/rp_controller.py
 """
-
-RESISTIVE PULSE
-
 * Contains RPController class.
 
 * Sections:
@@ -11,10 +8,6 @@ RESISTIVE PULSE
         - RPController(QtCore.QObject)
 
 """
-
-
-
-
 
 """
 Imports

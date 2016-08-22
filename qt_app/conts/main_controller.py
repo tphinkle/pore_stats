@@ -1,8 +1,5 @@
 # /qt_app/conts/main_controller.py
 """
-
-RESISTIVE PULSE
-
 * Contains MainController class.
 
 * Sections:

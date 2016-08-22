@@ -54,60 +54,58 @@ class RPController(QtCore.QObject):
 
     # Temp placement for training data path
     ML_FILE_PATH = '/home/preston/Desktop/Science/Research/pore_stats/qt_app/ML/event_predictions_train'
-
+    default_rpfile_directory = '/home/preston/Desktop/Science/Research/cancer_cells/data/'
 
     def __init__(self, main_model, main_view):
         self._main_model = main_model
         self._main_view = main_view
-
         super(RPController, self).__init__()
 
-    def add_rp(self):
-        """
-        * Description: Creates a resistive pulse UI group and model.
-        * Return:
-        * Arguments:
-        """
-
-        # Open a QFileDialog to see which file should be opened
+        # Get file_path
         file_path = QtGui.QFileDialog.getOpenFileName(parent = self._main_view,\
-            directory = '/home/preston/Desktop/Science/Research/cancer_cells/data/')
+            directory = RPController.default_rpfile_directory)
 
-        if file_path:
+        try:
+            # Create new RP Model and set file
+            new_rp_model = self._main_model.create_rp_model(self)
+            new_rp_model.set_active_file(file_path)
 
-            try:
+            # Create new RP View, subscribe View to Model
+            new_rp_view = self._main_view.create_rp_view()#parent_model = new_rp_model)
 
-                # Create new RP model and set file
-                new_rp_model = self._main_model.create_rp_model(self)
+            # Connect signals to slots
+            self.add_rp_slots(new_rp_model, new_rp_view)
 
-                new_rp_model.set_active_file(file_path)
+            # Set default state for View
+            self.set_rp_view_defaults(new_rp_view)
 
+            # Tell the model to load the time series data
+            new_rp_model.load_main_ts()
 
-                # Create new RP view, subscribe view to model
-                new_rp_view = self._main_view.create_rp_view(parent_model = new_rp_model)
+            # Make sure the main time series is set to visible when the data is ready
+            self.toggle_show_main_ts(new_rp_model, new_rp_view)
 
-                # Connect signals to slots
-                self.add_rp_slots(new_rp_model, new_rp_view)
+            new_rp_view.setWindowTitle('Resistive Pulse--'+file_path)
 
-                # Set defaults
-                self.set_rp_view_defaults(new_rp_view)
+        except:
+            # Couldn't open the file; most likely due to unrecognizable file type.
+            file_type = file_path.split('.')[-1]
+            raise TypeError('Could not open file of type ' + str(file_type))
 
-                new_rp_model.load_main_ts()
-
-                new_rp_model._main_ts._visible = True
-
-                self.plot_main_data(new_rp_model, new_rp_view, (0,1))
-
-                new_rp_view.setWindowTitle('Resistive Pulse--'+file_path)
-
-            except:
-                file_type = file_path.split('.')[-1]
-                raise TypeError('Could not open file of type ' + str(file_type))
-
-        return
+            return
 
 
     def add_rp_slots(self, rp_model, rp_view):
+        """
+        * Description: Establishes all signal/slot connections relevant to this instance
+                       of RP analysis, including signals that come from the associated
+                       RP Model AND View.
+        * Return:
+        * Arguments:
+            - rp_model: The Model associated with this instance of RP analysis.
+            - rp_view: The view associated with this instance of RP analysis. Origin of
+              GUI based signals.
+        """
 
         # Model -> View
         rp_model.busy.connect(lambda busy:\
@@ -125,56 +123,56 @@ class RPController(QtCore.QObject):
         """
 
         # Buttons
-        rp_view._show_main_data_button.clicked.connect(lambda clicked: \
-            self.show_main_button_clicked(rp_model, rp_view, clicked))
+        rp_view._show_main_data_button.clicked.connect(lambda: \
+            self.toggle_show_main_ts(rp_model, rp_view))
 
-        rp_view._show_baseline_button.clicked.connect(lambda clicked: \
-            self.show_baseline_button_clicked(rp_model, rp_view, clicked))
+        rp_view._show_baseline_button.clicked.connect(lambda: \
+            self.toggle_show_baseline_ts(rp_model, rp_view))
 
-        rp_view._find_events_button.clicked.connect(lambda clicked: \
-            self.find_events_button_clicked(rp_model, rp_view, clicked))
+        rp_view._find_events_button.clicked.connect(lambda: \
+            self.find_events(rp_model, rp_view))
 
-        rp_view._filter_data_button.clicked.connect(lambda clicked: \
-            self.filter_data_button_clicked(rp_model, rp_view, clicked))
+        rp_view._filter_data_button.clicked.connect(lambda: \
+            self.toggle_show_filtered_ts(rp_model, rp_view))
 
-        rp_view._save_events_button.clicked.connect(lambda clicked: \
-            self.save_events_button_clicked(rp_model, rp_view, clicked))
+        rp_view._save_events_button.clicked.connect(lambda: \
+            self.save_events(rp_model, rp_view))
 
-        rp_view._next_event_button.clicked.connect(lambda clicked: \
+        rp_view._next_event_button.clicked.connect(lambda: \
             self.target_next_event(rp_model, rp_view))
 
-        rp_view._previous_event_button.clicked.connect(lambda clicked: \
+        rp_view._previous_event_button.clicked.connect(lambda: \
             self.target_previous_event(rp_model, rp_view))
 
-        rp_view._predict_button.clicked.connect(lambda clicked: \
+        rp_view._predict_button.clicked.connect(lambda: \
             self.predict_select_unselect(rp_model, rp_view))
 
 
         # Check boxes
-        rp_view._use_main_checkbox.stateChanged.connect(lambda state: \
-            self.use_main_checkbox_stateChanged(rp_model, rp_view, state))
+        rp_view._use_main_checkbox.stateChanged.connect(lambda: \
+            self.validate_use_main_checkstate(rp_model, rp_view))
 
-        rp_view._use_filtered_checkbox.stateChanged.connect(lambda state: \
-            self.use_filtered_checkbox_stateChanged(rp_model, rp_view, state))
+        rp_view._use_filtered_checkbox.stateChanged.connect(lambda: \
+            self.validate_use_filtered_checkstate(rp_model, rp_view))
 
 
         # Fields
 
         rp_view._trigger_sigma_threshold_field.textChanged.connect(lambda text: \
-            self.trigger_sigma_threshold_field_changed(rp_model, rp_view, text))
+            self.change_trigger_sigma_threshold(rp_model, rp_view, text))
 
         rp_view._baseline_avg_length_field.textChanged.connect(lambda text: \
-            self.baseline_avg_length_field_changed(rp_model, rp_view, text))
+            self.change_baseline_avg_length(rp_model, rp_view, text))
 
         rp_view._max_search_length_field.textChanged.connect(lambda text: \
-            self.max_search_length_field_changed(rp_model, rp_view, text))
+            self.change_max_search_length(rp_model, rp_view, text))
 
         rp_view._filter_frequency_field.textChanged.connect(lambda text: \
-            self.filter_frequency_field_changed(rp_model, rp_view, text))
+            self.change_filter_frequency(rp_model, rp_view, text))
 
         # Plot interactions
         rp_view._main_plot.sigRangeChanged.connect(lambda rng: \
-            self.main_plot_range_changed(rp_model, rp_view, rng))
+            self.update_main_plot_range(rp_model, rp_view, rng))
 
         rp_view._main_plot.scene().sigMouseClicked.connect(lambda click: \
             self.main_plot_clicked(rp_model, rp_view, click))
@@ -189,6 +187,14 @@ class RPController(QtCore.QObject):
         return
 
     def catch_key_press(self, rp_model, rp_view, key):
+        """
+        * Description: Handles all keyboard stroke redirects caught by this Controller's
+          View.
+        * Return:
+        * Arguments:
+            - key: The integer ID of the key pressed. Integer ID's are matched to idiomatic
+              class variables such as 'KEY_RARROW' (the right arrow key).
+        """
         #print 'key_press:', key.key()
         key_press = key.key()
 
@@ -210,6 +216,12 @@ class RPController(QtCore.QObject):
 
 
     def set_rp_view_defaults(self, rp_view):
+        """
+        * Description: Sets the widgets in the View associated with this Controller to
+          show their default values. Example widgets include search parameter QLineEdits.
+        * Return:
+        * Arguments:
+        """
         rp_view._baseline_avg_length_field.setText('250')
         rp_view._trigger_sigma_threshold_field.setText('3')
         rp_view._max_search_length_field.setText('10000')
@@ -218,14 +230,33 @@ class RPController(QtCore.QObject):
         return
 
     def enable_ui(self, rp_model, rp_view, enable):
+        """
+        * Description: Issues a command to the View associated with this Controller to
+          enable/disable all of its command UI elements. For example, UI elements may
+          need to be disabled if the Model is performing heavy computation (e.g. finding
+          events)
+        * Return:
+        * Arguments:
+            - enable: Boolean value corresponding to whether to enable (True) or
+              disable (False).
+        """
         rp_view.enable_ui(enable)
         return
 
-    def main_plot_range_changed(self, rp_model, rp_view, rng):
-        viewRange = rng.viewRange()
+    def update_main_plot_range(self, rp_model, rp_view, rng):
+        """
+        * Description: Signal received when the user changes either axis in the main plot.
+          This signal routes to methods telling the main, baseline, and filtered
+          data to plot.
+        * Return:
+        * Arguments:
+          - rng: The PyQtGraph.ViewBox() that contains all information about the new
+            data range in the plot.
+        """
+        view_range = rng.viewRange()
 
-        ti = viewRange[0][0]
-        tf = viewRange[0][1]
+        ti = view_range[0][0]
+        tf = view_range[0][1]
 
         t_range = (ti,tf)
 
@@ -240,11 +271,18 @@ class RPController(QtCore.QObject):
 
         return
 
-
-
-
-    def show_main_button_clicked(self, rp_model, rp_view, clicked):
+    def toggle_show_main_ts(self, rp_model, rp_view):
+        """
+        * Description: Signal received when the 'Show/Hide raw' button is clicked. First
+          checks to see if the main time series is visible or not. e.g. if not visible,
+          routes to method that plots the main time series data. After updating the state
+          of the plot and displaying the data, the function ends by toggling the state of
+          the button.
+        * Return:
+        * Arguments:
+        """
         if rp_model._main_ts._visible == False:
+
             viewRange = rp_view._main_plot.viewRange()
             ti = viewRange[0][0]
             tf = viewRange[0][1]
@@ -264,20 +302,41 @@ class RPController(QtCore.QObject):
 
 
     def plot_main_data(self, rp_model, rp_view, t_range):
+        """
+        * Description: First checks to see if the RPModel._main_ts is ready to display.
+          If so, requests data from the RPModel._main_ts and sets the View's
+          rp_view._main_plot_item with that data. If the data is not ready to display,
+          harmlessly passes.
+        * Arguments:
+            - t_range: The range of data requested from the Model's time-series.
+        """
         if rp_model._main_ts._display_ready == True:
             main_data = rp_model.get_main_display_data(t_range)
             rp_view._main_plot_item.setData(main_data[:,0], main_data[:,1])
 
+        else:
+            pass
+
         return
 
 
-    def show_baseline_button_clicked(self, rp_model, rp_view, clicked):
+    def toggle_show_baseline_ts(self, rp_model, rp_view):
+        """
+        * Description: Signal received when the 'Show/Hide raw' button is clicked. Toggles
+          the visibility status of the rp_model._baseline_ts. E.g., if the data is visible
+          at the time of the click, it will be made invisible. If the data is toggled
+          to be visible, routes to the method that plots the data. After updating the
+          state of the plot and displaying the data, the function ends by toggling the
+          state of the button.
+        * Return:
+        * Arguments:
+        """
 
         if rp_model._baseline_ts._visible == False:
-            viewRange = rp_view._main_plot.viewRange()
+            view_range = rp_view._main_plot.viewRange()
 
-            ti = viewRange[0][0]
-            tf = viewRange[0][1]
+            ti = view_range[0][0]
+            tf = view_range[0][1]
 
             t_range = (ti,tf)
 
@@ -306,6 +365,14 @@ class RPController(QtCore.QObject):
         return
 
     def plot_baseline_data(self, rp_model, rp_view, t_range):
+        """
+        * Description: First checks to see if the rp_model._baseline_ts is ready to display.
+          If so, requests data from the rpmodel._baseline_ts and sets the View's
+          rp_view._baseline_plot_item with that data. If the data is not ready to display,
+          harmlessly passes.
+        * Arguments:
+            - t_range: The range of data requested from the Model's time-series.
+        """
 
         baseline_data = rp_model.get_baseline_display_data(t_range)
 
@@ -323,14 +390,23 @@ class RPController(QtCore.QObject):
         return
 
 
-    def filter_data_button_clicked(self, rp_model, rp_view, clicked):
-
+    def toggle_show_filtered_ts(self, rp_model, rp_view):
+        """
+        * Description: Signal received when the 'Show/Hide raw' button is clicked. Toggles
+          the visibility status of the rp_model._filtered_ts. E.g., if the data is visible
+          at the time of the click, it will be made invisible. If the data is toggled
+          to be visible, routes to the method that plots the data. After updating the
+          state of the plot and displaying the data, the function ends by toggling the
+          state of the button.
+        * Return:
+        * Arguments:
+        """
         if rp_model._filtered_ts._visible == False:
 
-            viewRange = rp_view._main_plot.viewRange()
+            view_range = rp_view._main_plot.viewRange()
 
-            t_i = viewRange[0][0]
-            t_f = viewRange[0][1]
+            t_i = view_range[0][0]
+            t_f = view_range[0][1]
 
             t_range = (t_i,t_f)
 
@@ -351,6 +427,14 @@ class RPController(QtCore.QObject):
 
 
     def plot_filtered_data(self, rp_model, rp_view, t_range):
+        """
+        * Description: First checks to see if the RPModel._filtered_ts is ready to display.
+          If so, requests data from the RPModel._filtered_ts and sets the View's
+          rp_view._main_plot_item with that data. If the data is not ready to display,
+          harmlessly passes.
+        * Arguments:
+            - t_range: The range of data requested from the Model's time-series.
+        """
         if rp_model._filtered_ts._display_ready == True:
             filtered_data = rp_model.get_filtered_display_data(t_range)
             rp_view._filtered_plot_item.setData(filtered_data)
@@ -360,36 +444,53 @@ class RPController(QtCore.QObject):
 
 
 
-    def find_events_button_clicked(self, rp_model, rp_view, clicked):
+    def find_events(self, rp_model, rp_view):
+        """
+        * Description: All Controller actions associated with finding events in an
+          RPModel time series.
+        * Return:
+        * Arguments:
+        """
+
+        # Have to remove the current events before new ones added
         self.clear_events(rp_model, rp_view)
 
         if rp_view._use_main_checkbox.checkState() == QtCore.Qt.Checked:
+            # The user does not wish to use the filtered data for the search.
             rp_model.find_events(filter = False)
 
         else:
+            # The user wants to search through the filtered data.
             rp_model.find_events(filter = True)
+
         return
 
     def clear_events(self, rp_model, rp_view):
-        # Clear view
+        """
+        * Description: Tells the View and Model to get rid of any data associated with
+          currently identified RP events.
+        * Return:
+        * Arguments:
+        """
+        # Clear View
         for event_plot_item in rp_view._event_plot_items:
             event_plot_item.clear()
         rp_view._event_plot_items = []
 
-        # Clear model
+        # Clear Model
         rp_model._event_manager.clear_events()
 
         return
 
 
-
-
-
-
-
-
-    def save_events_button_clicked(self, rp_model, rp_view, clicked):
-
+    def save_events(self, rp_model, rp_view):
+        """
+        * Description: Tells the RP Model to save the events to file.
+          *Temporary*: Tells the ML module to save the training data associated with the
+          detected events.
+        * Return:
+        * Arguments:
+        """
         rp_model.save_events()
 
         self.save_events_ML(rp_model, rp_view)
@@ -432,7 +533,15 @@ class RPController(QtCore.QObject):
         return
 
 
-    def use_main_checkbox_stateChanged(self, rp_model, rp_view, state):
+
+    def validate_use_main_checkstate(self, rp_model, rp_view):
+        """
+        * Description: Slot connected to 'Use ____' checkbox in GUI, which allows
+          user to choose whether they use the main (raw) or filtered time series when
+          looking for events. Ensures that exactly one option can be checked at a time.
+        * Return:
+        * Arguments:
+        """
         if rp_view._use_main_checkbox.checkState() == QtCore.Qt.Checked:
             rp_view._use_filtered_checkbox.setCheckState(QtCore.Qt.Unchecked)
         else:
@@ -440,7 +549,14 @@ class RPController(QtCore.QObject):
 
         return
 
-    def use_filtered_checkbox_stateChanged(self, rp_model, rp_view, state):
+    def validate_use_filtered_checkstate(self, rp_model, rp_view):
+        """
+        * Description: Slot connected to 'Use ____' checkbox in GUI, which allows
+          user to choose whether they use the main (raw) or filtered time series when
+          looking for events. Ensures that exactly one option can be checked at a time.
+        * Return:
+        * Arguments:
+        """
         if rp_view._use_filtered_checkbox.checkState() == QtCore.Qt.Checked:
             rp_view._use_main_checkbox.setCheckState(QtCore.Qt.Unchecked)
         else:
@@ -448,19 +564,47 @@ class RPController(QtCore.QObject):
 
         return
 
-    def baseline_avg_length_field_changed(self, rp_model, rp_view, text):
+    def change_baseline_avg_length(self, rp_model, rp_view, text):
+        """
+        * Description: Validates the user's entry for event search parameter
+          'baseline_avg_length' and changes the parameter in the Model if accepted.
+        * Return:
+        * Arguments:
+            - text: The proposed value for 'baseline_avg_length'
+        """
         rp_model.set_baseline_avg_length(int(text))
         return
 
-    def trigger_sigma_threshold_field_changed(self, rp_model, rp_view, text):
+    def change_trigger_sigma_threshold(self, rp_model, rp_view, text):
+        """
+        * Description: Validates the user's entry for event search parameter
+          'trigger_sigma_threshold' and changes the parameter in the Model if accepted.
+        * Return:
+        * Arguments:
+            - text: The proposed value for 'trigger_sigma_threshold'.
+        """
         rp_model.set_trigger_sigma_threshold(float(text))
         return
 
-    def max_search_length_field_changed(self, rp_model, rp_view, text):
+    def change_max_search_length(self, rp_model, rp_view, text):
+        """
+        * Description: Validates the user's entry for event search parameter
+          'max_search_length' and changes the parameter in the Model if accepted.
+        * Return:
+        * Arguments:
+            - text: The proposed value for 'max_search_length'.
+        """
         rp_model.set_max_search_length(int(text))
         return
 
-    def filter_frequency_field_changed(self, rp_model, rp_view, text):
+    def change_filter_frequency(self, rp_model, rp_view, text):
+        """
+        * Description: Validates the user's entry for event search parameter
+          'filter_frequency' and changes the parameter in the Model if accepted.
+        * Return:
+        * Arguments:
+            - text: The proposed value for 'filter_frequency'
+        """
         rp_model.set_filter_frequency(int(text))
         return
 

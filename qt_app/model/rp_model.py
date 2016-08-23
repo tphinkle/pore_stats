@@ -22,7 +22,8 @@ class RPModel(QtCore.QObject):
 
     # Signals
     busy = QtCore.pyqtSignal(bool)
-    event_added = QtCore.pyqtSignal('PyQt_PyObject')
+    #event_added = QtCore.pyqtSignal('PyQt_PyObject')
+    event_added = QtCore.pyqtSignal()
     targeted_event_changed = QtCore.pyqtSignal('PyQt_PyObject')
     events_cleared = QtCore.pyqtSignal()
 
@@ -256,10 +257,13 @@ class RPModel(QtCore.QObject):
 
         self._event_finder.moveToThread(self._event_thread)
         self.connect(self._event_thread, QtCore.SIGNAL('started()'), self.set_busy)
-        self.connect(self._event_finder, QtCore.SIGNAL('event_found(PyQt_PyObject)'), self.event_added)
-        #self.connect(self._event_finder, QtCore.SIGNAL('event_found(PyQt_PyObject)'), self._event_added)
-        self.connect(self._event_finder, QtCore.SIGNAL('event_found(PyQt_PyObject)'), self._event_manager.add_event)
         self.connect(self._event_thread, QtCore.SIGNAL('started()'), self._event_finder.find_events)
+        # Temporarily removed
+        #self.connect(self._event_finder, QtCore.SIGNAL('event_found(PyQt_PyObject)'), self.event_added)
+        self.connect(self._event_finder, QtCore.SIGNAL('event_found(PyQt_PyObject)'), self._event_manager.add_event)
+
+        # Process all event plotting at conclusion of search
+        self.connect(self._event_finder, QtCore.SIGNAL('finished()'), self.event_added)
         self.connect(self._event_finder, QtCore.SIGNAL('finished()'), self.set_not_busy)
 
         self._event_thread.start()

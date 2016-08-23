@@ -104,8 +104,8 @@ class RPController(QtCore.QObject):
         rp_model.busy.connect(lambda busy:\
          self.enable_ui(rp_model, rp_view, not busy))
 
-        rp_model.event_added.connect(lambda event:\
-            self.plot_new_event(rp_model, rp_view, event))
+        rp_model.event_added.connect(lambda:\
+            self.plot_new_event(rp_model, rp_view))
         rp_model.targeted_event_changed.connect(lambda targeted_event:\
             self.plot_targeted_event(rp_model, rp_view, targeted_event))
         rp_model.events_cleared.connect(lambda:\
@@ -633,17 +633,21 @@ class RPController(QtCore.QObject):
         rp_model.set_filter_frequency(int(text))
         return
 
-    def plot_new_event(self, rp_model, rp_view, event):
+    def plot_new_event(self, rp_model, rp_view):
         """
         * Description: Issues a command to rp_view to add a new event_plot_item.
         * Return:
         * Arguments:
             - event: The event to be plotted.
         """
-        rp_view.plot_new_event(event._data, rp_model._event_manager.is_selected(event))
+
+        events = rp_model._event_manager._events
+        for event in events:
+            rp_view.plot_new_event(event._data, rp_model._event_manager.is_selected(event))
+            self.select_event(rp_model, rp_view, event)
 
         #data_1 = rp_model._event_manager.get_selected_dur_amp()
-        rp_view._selected_stats_plot_item.addPoints([event._duration], [event._amplitude])
+            rp_view._selected_stats_plot_item.addPoints([event._duration], [event._amplitude])
 
         #data_2 = rp_model._event_manager.get_unselected_dur_amp()
         #rp_view._unselected_stats_plot_item.setData(data_2[:,0], data_2[:,1])
@@ -748,7 +752,7 @@ class RPController(QtCore.QObject):
         if rp_model._event_manager.is_targeted(event):
             rp_view._targeted_event_plot_item.setPen(rp_view.pen_2)
 
-        self.update_stats_plot(rp_model, rp_view)
+        #self.update_stats_plot(rp_model, rp_view)
 
         self.update_main_plot_text(rp_model, rp_view)
 

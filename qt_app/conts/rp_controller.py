@@ -639,6 +639,8 @@ class RPController(QtCore.QObject):
         """
         rp_view.plot_new_event(event._data, rp_model._event_manager.is_selected(event))
 
+        self.update_stats_plot(rp_model, rp_view)
+
         return
 
     def plot_targeted_event(self, rp_model, rp_view, targeted_event):
@@ -667,6 +669,21 @@ class RPController(QtCore.QObject):
         rp_view._targeted_event_marker_scatter_item.setData([x], [y])
 
 
+
+        return
+
+    def update_stats_plot(self, rp_model, rp_view):
+        """
+        * Description:
+        * Return:
+        * Arguments:
+            -
+        """
+        data_1 = rp_model._event_manager.get_selected_dur_amp()
+        rp_view._selected_stats_plot_item.setData(data_1[:,0], data_1[:,1])
+
+        data_2 = rp_model._event_manager.get_unselected_dur_amp()
+        rp_view._unselected_stats_plot_item.setData(data_2[:,0], data_2[:,1])
 
         return
 
@@ -738,7 +755,11 @@ class RPController(QtCore.QObject):
         if rp_model._event_manager.is_targeted(event):
             rp_view._targeted_event_plot_item.setPen(rp_view.pen_2)
 
+        self.update_stats_plot(rp_model, rp_view)
+
         self.update_main_plot_text(rp_model, rp_view)
+
+
 
         return
 
@@ -755,6 +776,8 @@ class RPController(QtCore.QObject):
         event_plot_item.setPen(rp_view.pen_4)
         if rp_model._event_manager.is_targeted(event):
             rp_view._targeted_event_plot_item.setPen(rp_view.pen_4)
+
+        self.update_stats_plot(rp_model, rp_view)
 
         self.update_main_plot_text(rp_model, rp_view)
 

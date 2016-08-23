@@ -26,8 +26,8 @@ class RPView(QtGui.QWidget):
     # Red pen
     pen_4 = QtGui.QPen(QtGui.QColor(200, 50, 50))
 
-    # Orange color
-    main_plot_text_color = QtGui.QColor(230, 100, 60)
+    # Green color
+    main_plot_text_color = QtGui.QColor(50, 205, 50)
 
     def __init__(self, parent_widget = None, parent_model = None):
         self._parent_widget = parent_widget
@@ -43,6 +43,7 @@ class RPView(QtGui.QWidget):
         self.setup_main_plot()
 
         self.setup_targeted_event_plot()
+        self.setup_stats_plot()
         self.setup_controls()
 
         self.setup_layout()
@@ -122,7 +123,6 @@ class RPView(QtGui.QWidget):
 
 
         self._main_plot_layout = QtGui.QGridLayout(self._main_plot)
-
         self._main_plot_layout.addWidget(self._main_plot_text_item, 0, 1, QtCore.Qt.AlignRight)
         self._main_plot_layout.setColumnStretch(0,1)
 
@@ -148,9 +148,13 @@ class RPView(QtGui.QWidget):
 
     def setup_targeted_event_plot(self):
         self._targeted_event_plot = pg.PlotWidget(parent = self)
+
+        self._targeted_event_plot.setLabel('left', text = 'Current (uA)')
+        self._targeted_event_plot.setLabel('bottom', text = 'Time (s)')
+
         targeted_event_plot_size_policy = QtGui.QSizePolicy()
-        targeted_event_plot_size_policy.setVerticalStretch(2)
-        targeted_event_plot_size_policy.setHorizontalStretch(1)
+        targeted_event_plot_size_policy.setVerticalStretch(1)
+        targeted_event_plot_size_policy.setHorizontalStretch(2)
         targeted_event_plot_size_policy.setVerticalPolicy(QtGui.QSizePolicy.Expanding)
         targeted_event_plot_size_policy.setHorizontalPolicy(QtGui.QSizePolicy.Expanding)
         self._targeted_event_plot.setSizePolicy(targeted_event_plot_size_policy)
@@ -161,17 +165,55 @@ class RPView(QtGui.QWidget):
 
         parent_geometry = self._targeted_event_plot.geometry()
 
-        self._next_event_button = QtGui.QPushButton('<', parent = self._targeted_event_plot)
-        self._next_event_button.setGeometry(0,100,50,50)
-        self._next_event_button.setStyleSheet('background-color: rgba(255,255,255,0)')
+
+        fixed_size_policy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+        #fixed_size_policy.setHeightForWidth(True)
+
+
 
 
         self._previous_event_button = QtGui.QPushButton('>', parent = self._targeted_event_plot)
-        self._previous_event_button.setGeometry(200,100,50,50)
+        self._previous_event_button.setFixedSize(QtCore.QSize(50, 50))
+        self._previous_event_button.setSizePolicy(fixed_size_policy)
         self._previous_event_button.setStyleSheet('background-color: rgba(255,255,255,0)')
+
+        self._next_event_button = QtGui.QPushButton('<', parent = self._targeted_event_plot)
+        self._next_event_button.setFixedSize(QtCore.QSize(50, 50))
+        self._next_event_button.setSizePolicy(fixed_size_policy)
+        self._next_event_button.setStyleSheet('background-color: rgba(255,255,255,0)')
+
+
+        self._main_plot_layout = QtGui.QGridLayout(self._targeted_event_plot)
+        self._main_plot_layout.addWidget(self._previous_event_button, 0, 0, QtCore.Qt.AlignLeft)
+        self._main_plot_layout.addWidget(self._next_event_button, 0, 2, QtCore.Qt.AlignRight)
+        self._main_plot_layout.setColumnStretch(0,2)
 
 
         return
+
+    def setup_stats_plot(self):
+        self._stats_plot = pg.PlotWidget(parent = self)
+
+        self._stats_plot.setLabel('left', text = 'Current (uA)')
+        self._stats_plot.setLabel('bottom', text = 'Time (s)')
+
+        stats_plot_size_policy = QtGui.QSizePolicy()
+        stats_plot_size_policy.setVerticalStretch(1)
+        stats_plot_size_policy.setHorizontalStretch(2)
+        stats_plot_size_policy.setVerticalPolicy(QtGui.QSizePolicy.Expanding)
+        stats_plot_size_policy.setHorizontalPolicy(QtGui.QSizePolicy.Expanding)
+        self._stats_plot.setSizePolicy(stats_plot_size_policy)
+
+        self._selected_stats_plot_item = pg.ScatterPlotItem()
+        self._selected_stats_plot_item.setPen(RPView.pen_2)
+        self._stats_plot.addItem(self._selected_stats_plot_item)
+
+        self._unselected_stats_plot_item = pg.ScatterPlotItem()
+        self._unselected_stats_plot_item.setPen(RPView.pen_4)
+        self._stats_plot.addItem(self._unselected_stats_plot_item)
+
+        parent_geometry = self._stats_plot.geometry()
+
 
 
 
@@ -251,9 +293,11 @@ class RPView(QtGui.QWidget):
 
     def setup_layout(self):
         self._layout_0 = QtGui.QGridLayout()
-        self._layout_0.addWidget(self._main_plot, 0, 0, 1, 2)
+        self._layout_0.addWidget(self._main_plot, 0, 0, 1, 3)
         self._layout_0.addWidget(self._targeted_event_plot, 1, 0)
-        self._layout_0.addWidget(self._controls_pane, 1, 1)
+        self._layout_0.addWidget(self._stats_plot, 1, 1)
+        self._layout_0.addWidget(self._controls_pane, 1, 2)
+
         self.setLayout(self._layout_0)
 
 

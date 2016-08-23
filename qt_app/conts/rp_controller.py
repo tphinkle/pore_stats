@@ -173,6 +173,9 @@ class RPController(QtCore.QObject):
         rp_view._targeted_event_plot.scene().sigMouseClicked.connect(lambda click: \
             self.targeted_event_plot_clicked(rp_model, rp_view, click))
 
+        rp_view._selected_stats_plot_item.sigClicked.connect(lambda points: \
+            self.handle_stats_plot_click(rp_model, rp_view, points))
+
         # Keyboard events
         rp_view.key_pressed.connect(lambda key: \
             self.catch_key_press(rp_model, rp_view, key))
@@ -639,7 +642,11 @@ class RPController(QtCore.QObject):
         """
         rp_view.plot_new_event(event._data, rp_model._event_manager.is_selected(event))
 
-        self.update_stats_plot(rp_model, rp_view)
+        #data_1 = rp_model._event_manager.get_selected_dur_amp()
+        rp_view._selected_stats_plot_item.addPoints([event._duration], [event._amplitude])
+
+        #data_2 = rp_model._event_manager.get_unselected_dur_amp()
+        #rp_view._unselected_stats_plot_item.setData(data_2[:,0], data_2[:,1])
 
         return
 
@@ -672,20 +679,6 @@ class RPController(QtCore.QObject):
 
         return
 
-    def update_stats_plot(self, rp_model, rp_view):
-        """
-        * Description:
-        * Return:
-        * Arguments:
-            -
-        """
-        data_1 = rp_model._event_manager.get_selected_dur_amp()
-        rp_view._selected_stats_plot_item.setData(data_1[:,0], data_1[:,1])
-
-        data_2 = rp_model._event_manager.get_unselected_dur_amp()
-        rp_view._unselected_stats_plot_item.setData(data_2[:,0], data_2[:,1])
-
-        return
 
     def main_plot_clicked(self, rp_model, rp_view, mouse_click):
         """
@@ -872,4 +865,17 @@ class RPController(QtCore.QObject):
         rp_view._main_plot_text_item.setText(line_1 + '\n' + line_2 + '\n' + line_3 + \
         '\n' + line_4)
 
+        return
+
+    def handle_stats_plot_click(self, rp_model, rp_view, points):
+        """
+        * Description:
+        * Return:
+        * Arguments:
+            -
+        """
+
+        print 'asdf!'
+        print points.data[0]
+        print points.data[1]
         return

@@ -206,10 +206,12 @@ class RPView(QtGui.QWidget):
 
         self._selected_stats_plot_item = pg.ScatterPlotItem()
         self._selected_stats_plot_item.setPen(RPView.pen_2)
+        self._selected_stats_plot_item.setSymbol('o')
         self._stats_plot.addItem(self._selected_stats_plot_item)
 
         self._unselected_stats_plot_item = pg.ScatterPlotItem()
         self._unselected_stats_plot_item.setPen(RPView.pen_4)
+        self._unselected_stats_plot_item.setSymbol('x')
         self._stats_plot.addItem(self._unselected_stats_plot_item)
 
         parent_geometry = self._stats_plot.geometry()

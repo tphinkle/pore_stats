@@ -135,13 +135,16 @@ class RPView(QtGui.QWidget):
 
         return
 
-    def plot_new_event(self, data, selected = True):
+    def plot_new_event(self, data, dur, amp, selected = True):
         if selected:
             pen = self.pen_4
         else:
             pen = self.pen_2
+
         self._event_plot_items.append(\
             self._main_plot.plot(data, pen = pen, zValue = 1))
+
+        self._stats_plot_item.addPoints([dur], [amp], pen = pen)
 
         return
 
@@ -204,15 +207,10 @@ class RPView(QtGui.QWidget):
         stats_plot_size_policy.setHorizontalPolicy(QtGui.QSizePolicy.Expanding)
         self._stats_plot.setSizePolicy(stats_plot_size_policy)
 
-        self._selected_stats_plot_item = pg.ScatterPlotItem()
-        self._selected_stats_plot_item.setPen(RPView.pen_2)
-        self._selected_stats_plot_item.setSymbol('o')
-        self._stats_plot.addItem(self._selected_stats_plot_item)
-
-        self._unselected_stats_plot_item = pg.ScatterPlotItem()
-        self._unselected_stats_plot_item.setPen(RPView.pen_4)
-        self._unselected_stats_plot_item.setSymbol('x')
-        self._stats_plot.addItem(self._unselected_stats_plot_item)
+        self._stats_plot_item = pg.ScatterPlotItem()
+        #self._stats_plot_item.setPen(RPView.pen_2)
+        #self._stats_plot_item.setSymbol('o')
+        self._stats_plot.addItem(self._stats_plot_item)
 
         parent_geometry = self._stats_plot.geometry()
 

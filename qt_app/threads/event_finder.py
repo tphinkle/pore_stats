@@ -53,13 +53,6 @@ class EventFinder(QtCore.QObject):
 
         raw_offset = int((self._search_data[0,0] - self._raw_data[0,0])*sampling_frequency)
 
-        print 'search:', self._search_data[:10,:]
-        print 'raw:', self._raw_data[:10,:]
-
-        print 'raw_offset = ', raw_offset
-
-        print 'search shape: ', self._search_data.shape
-
         try:
             while keep_going == True:
                 QtCore.QCoreApplication.processEvents()
@@ -71,10 +64,10 @@ class EventFinder(QtCore.QObject):
                     # Check if current exceeds threshold
                     if ((self._search_data[index,1] < baseline[2])
                         or (self._search_data[index,1] > baseline[3])):
-                        #print 'a', index, baseline[1], baseline[2], baseline[3]
+
                         # Update baseline (i.e., in case of drift)
 
-                        baseline=rp.get_baseline(self._search_data, index-2*self._baseline_avg_length,
+                        baseline=rp.get_baseline(self._search_data, index-1*self._baseline_avg_length,
                                               self._baseline_avg_length,
                                               self._trigger_sigma_threshold)
 
@@ -92,7 +85,7 @@ class EventFinder(QtCore.QObject):
                             # current returns to value half-way between
                             # the trigger value and the baseline average
                             # value
-                            reentry_threshold = (baseline[1])#+baseline[2])/2.
+                            reentry_threshold = (baseline[1]+baseline[2])/2. # Was just baseline[1]
                             while start_trigger_found == False:
 
                                 # Check if data point at start_index
@@ -126,7 +119,7 @@ class EventFinder(QtCore.QObject):
                         # current returns to value half-way between
                         # the trigger value and the baseline average
                         # value
-                        reentry_threshold=(baseline[1])#+baseline[2])/2.
+                        reentry_threshold=(baseline[1]+baseline[2])/2. # Was just baseline[1]
                         while stop_trigger_found == False:
                             if abs(self._search_data[stop_index,1])>=abs(reentry_threshold):
 

@@ -19,12 +19,14 @@ class RPView(QtGui.QWidget):
 
     # Blue pen
     pen_2 = QtGui.QPen(QtGui.QColor(50,50,200))
+    brush_2 = QtGui.QBrush(QtGui.QColor(50, 50, 200))
 
     # Dark gray pen
     pen_3 = QtGui.QPen(QtGui.QColor(120,120,120))
 
     # Red pen
     pen_4 = QtGui.QPen(QtGui.QColor(200, 50, 50))
+    brush_4 = QtGui.QBrush(QtGui.QColor(200, 50, 50, 0))
 
     # Green color
     main_plot_text_color = QtGui.QColor(50, 205, 50)

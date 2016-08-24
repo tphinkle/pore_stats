@@ -7,7 +7,8 @@ import numpy as np
 
 import os.path
 
-ATF_HEADER_LENGTH = 10
+ATF_HEADER_LENGTH_GAP_FREE = 10
+ATF_HEADER_LENGTH_EPISODIC_STIMULATION = 11
 
 BTS_HEADER_BYTES = 4
 BTS_ELEMENT_BYTES = 8
@@ -74,11 +75,15 @@ def get_file_length(file_path):
             return file_length
 
     elif file_type == 'atf':
+        acq_mode = get_atf_acquisition_mode(file_path)
         with open(file_path) as f:
             for i, l in enumerate(f):
                 pass
             f.close()
-            return i+1-ATF_HEADER_LENGTH
+            if acq_mode == 'Episodic Stimulation':
+                return i+1-ATF_HEADER_LENGTH_EPISODIC_STIMULATION
+            elif acq_mode == 'Gap Free':
+                return i+1-ATF_HEADER_LENGTH_GAP_FREE
 
     elif file_type == 'raw':
         with open(file_path) as f:
@@ -127,8 +132,6 @@ def split_file(file_path, split_factor):
             start = i*interval
             stop = start + interval
 
-
-
             split_data = np.copy(data[start:stop, :])
             print split_data[:10,:]
             #split_data[:,0] = split_data[:,0] - split_data[0,0]
@@ -141,8 +144,28 @@ def split_file(file_path, split_factor):
 
     return
 
+def get_atf_acquisition_mode(file_path):
+    """
+    * Description: Reads the acquisition mode from the .atf file.
+    * Return: acquisition mode (string)
+    * Arguments:
+        - file_path: Name of file
+    """
 
-def atf_to_bts(file_path, current_column, byte_type = 'd'):
+    input_file_handle=open(file_path, 'r')
+    input_reader=csv.reader(input_file_handle, delimiter='\t', quotechar='|')
+
+    for i in xrange(3):
+        row = input_reader.next()
+
+    # Get acquisition mode
+    acquisition_mode = row[0].split('=')[-1].split('\"')[0]
+
+    input_file_handle.close()
+
+    return acquisition_mode
+
+def atf_to_bts(file_path, current_column = 1, byte_type = 'd'):
     """
     * Description: Converts an axon text file to a binary time-series file
     * Return: None
@@ -155,28 +178,81 @@ def atf_to_bts(file_path, current_column, byte_type = 'd'):
     file_length = get_file_length(file_path)
 
 
-    # Create empty list to hold all
-    data=np.empty((file_length, 2))
+
+
+
+    acquisition_mode = get_atf_acquisition_mode(file_path)
 
     input_file_handle=open(file_path, 'r')
     input_reader=csv.reader(input_file_handle, delimiter='\t', quotechar='|')
 
-    # Skip header
-    for i in xrange(ATF_HEADER_LENGTH):
-        input_reader.next()
 
-    # Read contents of .atf into data array
-    for i in xrange(file_length):
+    # Return to beginning of file
+    input_file_handle.seek(0)
+
+    if acquisition_mode == 'Gap Free':
+
+        # Create empty list to hold all
+        data=np.empty((file_length, 2))
+
+        # Skip header
+        for i in xrange(ATF_HEADER_LENGTH_GAP_FREE):
+            row = input_reader.next()
+
+        # Read contents of .atf into data array
+        for i in xrange(file_length):
+            row = input_reader.next()
+            data[i,0] = float(row[0])
+            data[i,1] = float(row[current_column])
+
+
+        input_file_handle.close()
+        # Write to .bts file
+        output_file_path = file_path.split('.')[0]+'.bts'
+
+        np_to_bts(output_file_path, data)
+
+    elif acquisition_mode == 'Episodic Stimulation':
+        # Skip header
+        for i in xrange(ATF_HEADER_LENGTH_EPISODIC_STIMULATION):
+            row = input_reader.next()
+
+        # Get # of voltages taken
         row = input_reader.next()
-        data[i,0] = float(row[0])
-        data[i,1] = float(row[current_column])
+        num_voltages = (len(row)-1)/2 # Subtract time, divide by two for current/voltage
+        voltages = [0 for i in range(num_voltages)]
+        for i in range(0, num_voltages):
+            voltages[i] = round(float(row[2*(i+1)]), 1)
+
+        print 'num_voltages = ', num_voltages
+        # Create the matrix
+        # Create empty list to hold all
+        data=np.empty((file_length, num_voltages+1)) # Add time data
+
+
+        for i in range(file_length - 1):
+
+            row = input_reader.next()
+            data[i,0] = float(row[0])
+            for j in range(num_voltages):
+                data[i,j+1] = float(row[2*j+1])
+
+        input_file_handle.close()
+
+        for i in range(num_voltages):
+            output_file_path = file_path.split('.')[0]+'V'+str(voltages[i]).replace('.', 'p')+'.bts'
+            np_to_bts(output_file_path, data[:,[0,i+1]])
 
 
 
-    # Write to .bts file
-    output_file_path = file_path.split('.')[0]+'.bts'
+        # Read contents of .atf into data array
+        #for i in xrange(file_length)
 
-    np_to_bts(output_file_path, data)
+        return
+
+
+    else:
+        print 'Could not convert to .bts... Did not recognize file type!'
 
     return
 

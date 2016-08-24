@@ -43,6 +43,7 @@ class RPController(QtCore.QObject):
     # KEY MAPPINGS
     KEY_1 = 49
     KEY_2 = 50
+    KEY_LSHIFT = 16777248
     KEY_LARROW = 16777234
     KEY_RARROW = 16777236
 
@@ -181,6 +182,9 @@ class RPController(QtCore.QObject):
         rp_view.key_pressed.connect(lambda key: \
             self.catch_key_press(rp_model, rp_view, key))
 
+        rp_view.key_released.connect(lambda key: \
+            self.catch_key_release(rp_model, rp_view, key))
+
         return
 
     def catch_key_press(self, rp_model, rp_view, key):
@@ -195,6 +199,7 @@ class RPController(QtCore.QObject):
         #print 'key_press:', key.key()
         key_press = key.key()
 
+
         if key_press == self.KEY_1:
             self.select_event(rp_model, rp_view, rp_model._event_manager._targeted_event)
 
@@ -206,6 +211,13 @@ class RPController(QtCore.QObject):
 
         elif key_press == self.KEY_RARROW:
             self.target_next_event(rp_model, rp_view)
+
+        return
+
+    def catch_key_release(self, rp_model, rp_view, key):
+        key_release = key.key()
+
+        
 
         return
 

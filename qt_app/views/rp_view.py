@@ -9,7 +9,7 @@ import PyQt4.QtGui as QtGui
 
 class RPView(QtGui.QWidget):
 
-    key_pressed = QtCore.pyqtSignal('PyQt_PyObject')
+
 
     # Gray pen
     pen_0 = QtGui.QPen(QtGui.QColor(200,200,200))
@@ -30,6 +30,10 @@ class RPView(QtGui.QWidget):
 
     # Green color
     main_plot_text_color = QtGui.QColor(50, 205, 50)
+
+    # Signals
+    key_pressed = QtCore.pyqtSignal('PyQt_PyObject')
+    key_released = QtCore.pyqtSignal('PyQt_PyObject')
 
     def __init__(self, parent_widget = None, parent_model = None):
         self._parent_widget = parent_widget
@@ -59,7 +63,11 @@ class RPView(QtGui.QWidget):
         self.show()
 
     def keyPressEvent(self, key):
+
         self.emit(QtCore.SIGNAL('key_pressed(PyQt_PyObject)'), key)
+
+    def keyReleaseEvent(self, key):
+        self.emit(QtCore.SIGNAL('key_released(PyQt_PyObject)'), key)
 
 
     def setup_subwindow(self):

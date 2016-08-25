@@ -178,6 +178,12 @@ class RPController(QtCore.QObject):
         rp_view._stats_plot_item.sigClicked.connect(lambda scatter_plot_item, points: \
             self.handle_stats_plot_click(rp_model, rp_view, scatter_plot_item, points))
 
+        rp_view._lcursor.sigPositionChanged.connect(lambda: \
+            self.update_main_plot_text(rp_model, rp_view))
+
+        rp_view._rcursor.sigPositionChanged.connect(lambda: \
+            self.update_main_plot_text(rp_model, rp_view))
+
         # Keyboard events
         rp_view.key_pressed.connect(lambda key: \
             self.catch_key_press(rp_model, rp_view, key))
@@ -189,7 +195,7 @@ class RPController(QtCore.QObject):
 
     def catch_key_press(self, rp_model, rp_view, key):
         """
-        * Description: Handles all keyboard stroke redirects caught by this Controller's
+        * Description: Handles all keyboard stroke press redirects caught by this Controller's
           View.
         * Return:
         * Arguments:
@@ -199,6 +205,7 @@ class RPController(QtCore.QObject):
         #print 'key_press:', key.key()
         key_press = key.key()
 
+        print 'press!'
 
         if key_press == self.KEY_1:
             self.select_event(rp_model, rp_view, rp_model._event_manager._targeted_event)
@@ -212,14 +219,35 @@ class RPController(QtCore.QObject):
         elif key_press == self.KEY_RARROW:
             self.target_next_event(rp_model, rp_view)
 
+        elif key_press == self.KEY_LSHIFT:
+            self.toggle_cursor_mode(rp_model, rp_view)
+
         return
 
     def catch_key_release(self, rp_model, rp_view, key):
-        key_release = key.key()
+        """
+        * Description: Handles all keyboard release redirects caught by this Controller's
+          View.
+        * Return:
+        * Arguments:
+            - key: The integer ID of the key released.
+        """
 
-        
 
         return
+
+    def toggle_cursor_mode(self, rp_model, rp_view):
+        """
+        * Description: Sets cursor mode for rp_view, which when on allows users to drop a
+          vertical line onto the screen indicating the event search range.
+        * Return:
+        * Arguments:
+            - on: Boolean state (turn on vs. turn off)
+        """
+        rp_view._lcursor.setVisible(not rp_view._lcursor.isVisible())
+        rp_view._rcursor.setVisible(not rp_view._rcursor.isVisible())
+        self.update_main_plot_text(rp_model, rp_view)
+
 
 
 
@@ -466,13 +494,26 @@ class RPController(QtCore.QObject):
         # Have to remove the current events before new ones added
         self.clear_events(rp_model, rp_view)
 
+        # Check whether to use the filtered data or not
         if rp_view._use_main_checkbox.checkState() == QtCore.Qt.Checked:
-            # The user does not wish to use the filtered data for the search.
-            rp_model.find_events(filter = False)
-
+            filter = False
         else:
-            # The user wants to search through the filtered data.
-            rp_model.find_events(filter = True)
+            filter = True
+
+        # Check to see if the user wants to search over an interval or the entire segment
+        if rp_view._lcursor.isVisible() == True:
+            t0 = rp_view._lcursor.value()
+            t1 = rp_view._rcursor.value()
+
+            # In case the left cursor is to the right of the right cursor...
+            if t0 > t1:
+                t0 = temp
+                t0 = t1
+                t1 = temp
+
+            rp_model.find_events(ti = ti, tf = tf, filter = filter)
+
+        rp_model.find_events(filter = filter)
 
         return
 
@@ -698,6 +739,28 @@ class RPController(QtCore.QObject):
 
     def main_plot_clicked(self, rp_model, rp_view, mouse_click):
         """
+        * Description: Intercepts mouse clicks on main plot, and redirects to the
+          _selection_mode or _cursor_mode methods depending on the current state.
+        * Return:
+        * Arguments:
+            - mouse_click: The mouseclick instance created by the user.
+        """
+
+        modifiers = QtGui.QApplication.keyboardModifiers()
+
+        # shift is held; go to cursor mode
+        if modifiers == QtCore.Qt.ShiftModifier:
+            self.main_plot_clicked_cursor_mode(rp_model, rp_view, mouse_click)
+
+        # shift not held; go to selection mode
+        else:
+            self.main_plot_clicked_selection_mode(rp_model, rp_view, mouse_click)
+
+        return
+
+
+    def main_plot_clicked_selection_mode(self, rp_model, rp_view, mouse_click):
+        """
         * Description: Slot connected to signal when the rp_view._main_plot is clicked.
           Checks coordinates of click and whether it is single or double. If coordinates
           are over an event in the plot, will respond by targeting the event if the click
@@ -706,6 +769,9 @@ class RPController(QtCore.QObject):
         * Arguments:
             - mouse_click: The mouseclick instance created by the user.
         """
+
+        print 'clicked in event mode!'
+
         click_coords = rp_view._main_plot.getPlotItem().getViewBox().mapSceneToView(mouse_click.scenePos())
         x_pos = click_coords.x()
 
@@ -727,8 +793,11 @@ class RPController(QtCore.QObject):
             if mouse_click.double():
                 self.toggle_select_event(rp_model, rp_view, clicked_event)
 
+        return
 
-
+    def main_plot_clicked_cursor_mode(self, rp_model, rp_view, mouse_click):
+        print 'clicked in cursor mode!'
+        print rp_view._lcursor.value()
         return
 
     def toggle_select_event(self, rp_model, rp_view, event):
@@ -926,20 +995,47 @@ class RPController(QtCore.QObject):
         * Return:
         * Arguments:
         """
+
+        # Decimation line
         line_1 = 'Decimation factor: ' + str(rp_model._main_ts._current_decimation_factor) + \
         'x'
 
+        # Event lines
         if len(rp_model._event_manager._events) == 0:
             line_2 = 'Events total: --'
             line_3 = 'Events selected: --'
             line_4 = 'Event targeted: --'
+
         else:
             line_2 = 'Events total: ' + str(len(rp_model._event_manager._events))
             line_3 = 'Events selected: ' + str(len(rp_model._event_manager._selected_events))
             line_4 = 'Event targeted: ' + str(rp_model._event_manager._targeted_event._id)
 
+        # Cursor lines
+        line_5 = 'Left cursor: '
+        line_6 = 'Right cursor: '
+        line_7 = 'Delta: '
+        if rp_view._lcursor.isVisible() == True:
+            lcursor_x = rp_view._lcursor.value()
+            rcursor_x = rp_view._rcursor.value()
+            delta_x = rcursor_x - lcursor_x
+            if delta_x > 0:
+                line_5 += str(lcursor_x) + 's'
+                line_6 += str(rcursor_x) + 's'
+            else:
+                line_5 += str(rcursor_x) + 's'
+                line_6 += str(lcursor_x) + 's'
+            line_7 += str(abs(delta_x)) + 's'
+
+        else:
+            line_5 += '--'
+            line_6 += '--'
+            line_7 += '--'
+
+
+
         rp_view._main_plot_text_item.setText(line_1 + '\n' + line_2 + '\n' + line_3 + \
-        '\n' + line_4)
+        '\n' + line_4 + '\n' + line_5 + '\n' + line_6 + '\n' + line_7)
 
         return
 

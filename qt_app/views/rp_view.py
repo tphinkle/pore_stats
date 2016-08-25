@@ -31,6 +31,9 @@ class RPView(QtGui.QWidget):
     # Green color
     main_plot_text_color = QtGui.QColor(50, 205, 50)
 
+    # Green pen
+    pen_5 = QtGui.QPen(QtGui.QColor(50, 205, 50))
+
     # Signals
     key_pressed = QtCore.pyqtSignal('PyQt_PyObject')
     key_released = QtCore.pyqtSignal('PyQt_PyObject')
@@ -51,6 +54,7 @@ class RPView(QtGui.QWidget):
         self.setup_targeted_event_plot()
         self.setup_stats_plot()
         self.setup_controls()
+
 
         self.setup_layout()
 
@@ -135,6 +139,23 @@ class RPView(QtGui.QWidget):
         self._main_plot_layout = QtGui.QGridLayout(self._main_plot)
         self._main_plot_layout.addWidget(self._main_plot_text_item, 0, 1, QtCore.Qt.AlignRight)
         self._main_plot_layout.setColumnStretch(0,1)
+
+        # Set up cursor lines
+        self._lcursor = pg.InfiniteLine()
+        self._lcursor.setAngle(90)
+        self._lcursor.setValue(0)
+        self._lcursor.setPen(RPView.pen_5)
+        self._lcursor.setMovable(True)
+        self._main_plot.addItem(self._lcursor)
+
+
+        self._rcursor = pg.InfiniteLine()
+        self._rcursor.setAngle(90)
+        self._rcursor.setValue(0.5)
+        self._rcursor.setPen(RPView.pen_5)
+        self._rcursor.setMovable(True)
+        self._main_plot.addItem(self._rcursor)
+
 
 
         main_plot_policy = QtGui.QSizePolicy()

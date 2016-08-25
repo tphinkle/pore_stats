@@ -232,7 +232,7 @@ class RPModel(QtCore.QObject):
         return filtered_display_data
 
 
-    def find_events(self, filter = False):
+    def find_events(self, ti = -1, tf = -1, filter = False):
 
         self._event_manager.clear_events()
         parameters = []
@@ -250,7 +250,7 @@ class RPModel(QtCore.QObject):
         else:
             filtered_data = copy.copy(self._filtered_ts._decimated_data_list[0])
 
-        self._event_finder = event_finder.EventFinder(copy.copy(self._main_ts._decimated_data_list[0]), \
+        self._event_finder = event_finder.EventFinder(copy.copy(self._main_ts._decimated_data_list[0]), ti = ti, tf = tf, \
             self._baseline_avg_length, self._trigger_sigma_threshold, self._max_search_length, filtered_data = filtered_data, go_past_length = 0)
 
 

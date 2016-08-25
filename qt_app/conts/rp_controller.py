@@ -514,13 +514,20 @@ class RPController(QtCore.QObject):
         * Return:
         * Arguments:
         """
-        # Clear View
+        # Clear rp_view._main_plot
         for event_plot_item in rp_view._event_plot_items:
             event_plot_item.clear()
+        rp_view._event_plot_items = []
+        rp_view._targeted_event_marker_scatter_item.clear()
 
+        # Clear rp_view._stats_plot
         rp_view._stats_plot_item.clear()
 
-        rp_view._event_plot_items = []
+        # Clear rp_view._targeted_event_plot
+        rp_view._targeted_event_plot_item.clear()
+
+        # Clear main plot text
+        self.update_main_plot_text(rp_model, rp_view)
 
         # Clear Model
         rp_model._event_manager.clear_events()
@@ -604,7 +611,9 @@ class RPController(QtCore.QObject):
             -
         """
         rp_model._event_manager._targeted_event = targeted_event
+
         self.plot_targeted_event(rp_model, rp_view, targeted_event)
+        self.update_main_plot_text(rp_model, rp_view)
         self.update_stats_plot(rp_model, rp_view)
 
         return
@@ -753,7 +762,7 @@ class RPController(QtCore.QObject):
 
 
 
-        self.update_main_plot_text(rp_model, rp_view)
+
         QtCore.QCoreApplication.processEvents()
 
         self.update_targeted_event_marker_scatter_item(rp_model, rp_view, targeted_event)

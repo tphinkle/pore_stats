@@ -205,7 +205,6 @@ class RPController(QtCore.QObject):
         #print 'key_press:', key.key()
         key_press = key.key()
 
-        print 'press!'
 
         if key_press == self.KEY_1:
             self.select_event(rp_model, rp_view, rp_model._event_manager._targeted_event)
@@ -224,17 +223,6 @@ class RPController(QtCore.QObject):
 
         return
 
-    def catch_key_release(self, rp_model, rp_view, key):
-        """
-        * Description: Handles all keyboard release redirects caught by this Controller's
-          View.
-        * Return:
-        * Arguments:
-            - key: The integer ID of the key released.
-        """
-
-
-        return
 
     def toggle_cursor_mode(self, rp_model, rp_view):
         """
@@ -247,6 +235,8 @@ class RPController(QtCore.QObject):
         rp_view._lcursor.setVisible(not rp_view._lcursor.isVisible())
         rp_view._rcursor.setVisible(not rp_view._rcursor.isVisible())
         self.update_main_plot_text(rp_model, rp_view)
+
+        return
 
 
 
@@ -742,28 +732,6 @@ class RPController(QtCore.QObject):
 
     def main_plot_clicked(self, rp_model, rp_view, mouse_click):
         """
-        * Description: Intercepts mouse clicks on main plot, and redirects to the
-          _selection_mode or _cursor_mode methods depending on the current state.
-        * Return:
-        * Arguments:
-            - mouse_click: The mouseclick instance created by the user.
-        """
-
-        modifiers = QtGui.QApplication.keyboardModifiers()
-
-        # shift is held; go to cursor mode
-        if modifiers == QtCore.Qt.ShiftModifier:
-            self.main_plot_clicked_cursor_mode(rp_model, rp_view, mouse_click)
-
-        # shift not held; go to selection mode
-        else:
-            self.main_plot_clicked_selection_mode(rp_model, rp_view, mouse_click)
-
-        return
-
-
-    def main_plot_clicked_selection_mode(self, rp_model, rp_view, mouse_click):
-        """
         * Description: Slot connected to signal when the rp_view._main_plot is clicked.
           Checks coordinates of click and whether it is single or double. If coordinates
           are over an event in the plot, will respond by targeting the event if the click
@@ -773,7 +741,6 @@ class RPController(QtCore.QObject):
             - mouse_click: The mouseclick instance created by the user.
         """
 
-        print 'clicked in event mode!'
 
         click_coords = rp_view._main_plot.getPlotItem().getViewBox().mapSceneToView(mouse_click.scenePos())
         x_pos = click_coords.x()
@@ -798,10 +765,9 @@ class RPController(QtCore.QObject):
 
         return
 
-    def main_plot_clicked_cursor_mode(self, rp_model, rp_view, mouse_click):
-        print 'clicked in cursor mode!'
-        print rp_view._lcursor.value()
-        return
+
+
+
 
     def toggle_select_event(self, rp_model, rp_view, event):
         """

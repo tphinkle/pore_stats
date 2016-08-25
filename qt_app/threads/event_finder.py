@@ -18,7 +18,9 @@ class EventFinder(QtCore.QObject):
     event_found = QtCore.pyqtSignal('PyQt_PyObject')
     finished = QtCore.pyqtSignal()
 
-    def __init__(self, raw_data,\
+    def __init__(self, raw_data,
+                ti,\
+                tf,\
                 baseline_avg_length,\
                 trigger_sigma_threshold,\
                 max_search_length,\
@@ -27,39 +29,68 @@ class EventFinder(QtCore.QObject):
 
         super(EventFinder, self).__init__(parent = None)
 
-        self._raw_data = copy.copy(raw_data)
-        if filtered_data != None:
-            self._search_data = filtered_data
-        else:
-            self._search_data = raw_data
 
-        self._baseline_avg_length = copy.copy(baseline_avg_length)
-        self._trigger_sigma_threshold = copy.copy(trigger_sigma_threshold)
-        self._max_search_length = copy.copy(max_search_length)
-        self._go_past_length = copy.copy(go_past_length)
+
+        self._sampling_frequency = int(1./(raw_data[1,0] - raw_data[0,0]))
+
+        self._ti = ti
+        self._tf = tf
+
+        if self._ti > self._tf:
+            temp = self._ti
+            self._ti = self._tf
+            self._tf = temp
+
+        if self._ti < 0:
+            self._ti = 0
+
+        if self._tf > raw_data[-1,0]:
+            self._tf = raw_data[-1,0]
+
+        self._ii = int(self._ti*self._sampling_frequency)
+        self._if = int(self._tf*self._sampling_frequency)
+
+        self._raw_data = copy.copy(raw_data[self._ii:self._if,:])
+        if filtered_data != None:
+            self._search_data = copy.copy(filtered_data[self._ii:self._if,:])
+        else:
+            self._search_data = copy.copy(raw_data[self._ii:self._if,:])
+
+
+        self._baseline_avg_length = baseline_avg_length
+        self._trigger_sigma_threshold = trigger_sigma_threshold
+        self._max_search_length = max_search_length
+        self._go_past_length = go_past_length
+
 
     @QtCore.pyqtSlot()
     def find_events(self):
-        events_found = 0
 
-        # Get file length; define start, stop points; check points
-        index = 0
+        index = 0#1*self._ii
+
+
+
         baseline = rp.get_baseline(self._search_data, index, self._baseline_avg_length,
             self._trigger_sigma_threshold)
 
+
+        raw_offset = int((self._search_data[0,0] - self._raw_data[0,0])*
+                          self._sampling_frequency)
+
+        events_found = 0
         keep_going = True
 
-        sampling_frequency = int(1./(self._raw_data[1,0] - self._raw_data[0,0]))
+        events = []
 
-        raw_offset = int((self._search_data[0,0] - self._raw_data[0,0])*sampling_frequency)
+
 
         try:
             while keep_going == True:
                 QtCore.QCoreApplication.processEvents()
+
                 # Look for event start
                 start_trigger_found = False
                 while start_trigger_found == False:
-
 
                     # Check if current exceeds threshold
                     if ((self._search_data[index,1] < baseline[2])
@@ -67,7 +98,7 @@ class EventFinder(QtCore.QObject):
 
                         # Update baseline (i.e., in case of drift)
 
-                        baseline=rp.get_baseline(self._search_data, index-1*self._baseline_avg_length,
+                        baseline=rp.get_baseline(self._search_data, index-2*self._baseline_avg_length,
                                               self._baseline_avg_length,
                                               self._trigger_sigma_threshold)
 
@@ -85,7 +116,7 @@ class EventFinder(QtCore.QObject):
                             # current returns to value half-way between
                             # the trigger value and the baseline average
                             # value
-                            reentry_threshold = (baseline[1]+baseline[2])/2. # Was just baseline[1]
+                            reentry_threshold = (baseline[1])#+baseline[2])/2. # Was just baseline[1]
                             while start_trigger_found == False:
 
                                 # Check if data point at start_index
@@ -119,7 +150,7 @@ class EventFinder(QtCore.QObject):
                         # current returns to value half-way between
                         # the trigger value and the baseline average
                         # value
-                        reentry_threshold=(baseline[1]+baseline[2])/2. # Was just baseline[1]
+                        reentry_threshold=(baseline[1])#+baseline[2])/2. # Was just baseline[1]
                         while stop_trigger_found == False:
                             if abs(self._search_data[stop_index,1])>=abs(reentry_threshold):
 
@@ -141,9 +172,10 @@ class EventFinder(QtCore.QObject):
 
                         event = rp.ResistivePulseEvent(copy.deepcopy(self._raw_data[start_index+raw_offset:stop_index+1+raw_offset,:]),
                                                           baseline)
+                        events.append(event)
                         events_found += 1
                         print 'event #', events_found, 'index = ', start_index
-                        self.emit(QtCore.SIGNAL('event_found(PyQt_PyObject)'), event)
+
                         #print 'event # ', events_found, 't_i = ', search_data[start_index,0]
                         #print start_index, ',', stop_index, events[-1]._data[0,0], ',', events[-1]._data[-1,0]
 
@@ -178,12 +210,13 @@ class EventFinder(QtCore.QObject):
                     index += 1
 
         except Exception as inst:
-            print 'error! index = ', index, 'start_index = ', start_index, 'stop_index = ',\
-                stop_index
-            print 'line num = ', sys.exc_info()[2].tb_lineno
+            print 'error! line num = ', sys.exc_info()[2].tb_lineno
             print(type(inst))
             print(inst.args)
             print(inst)
-
+            print 'error! index = ', index, 'start_index = ', start_index, 'stop_index = ',\
+                stop_index
+            self.emit(QtCore.SIGNAL('events_found(PyQt_PyObject)'), events)
             self.emit(QtCore.SIGNAL('finished()'))
+
             return

@@ -260,10 +260,10 @@ class RPModel(QtCore.QObject):
         self.connect(self._event_thread, QtCore.SIGNAL('started()'), self._event_finder.find_events)
         # Temporarily removed
         #self.connect(self._event_finder, QtCore.SIGNAL('event_found(PyQt_PyObject)'), self.event_added)
-        self.connect(self._event_finder, QtCore.SIGNAL('event_found(PyQt_PyObject)'), self._event_manager.add_event)
+        self.connect(self._event_finder, QtCore.SIGNAL('events_found(PyQt_PyObject)'), self._event_manager.add_events)
 
         # Process all event plotting at conclusion of search
-        
+
         self.connect(self._event_finder, QtCore.SIGNAL('finished()'), self.event_added)
         self.connect(self._event_finder, QtCore.SIGNAL('finished()'), self.set_not_busy)
 

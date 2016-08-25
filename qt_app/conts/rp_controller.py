@@ -502,14 +502,14 @@ class RPController(QtCore.QObject):
 
         # Check to see if the user wants to search over an interval or the entire segment
         if rp_view._lcursor.isVisible() == True:
-            t0 = rp_view._lcursor.value()
-            t1 = rp_view._rcursor.value()
+            ti = rp_view._lcursor.value()
+            tf = rp_view._rcursor.value()
 
             # In case the left cursor is to the right of the right cursor...
-            if t0 > t1:
-                t0 = temp
-                t0 = t1
-                t1 = temp
+            if ti > tf:
+                ti = temp
+                ti = t1
+                tf = temp
 
             rp_model.find_events(ti = ti, tf = tf, filter = filter)
 
@@ -1016,16 +1016,16 @@ class RPController(QtCore.QObject):
         line_6 = 'Right cursor: '
         line_7 = 'Delta: '
         if rp_view._lcursor.isVisible() == True:
-            lcursor_x = rp_view._lcursor.value()
-            rcursor_x = rp_view._rcursor.value()
-            delta_x = rcursor_x - lcursor_x
+            lcursor_x = round(rp_view._lcursor.value(), 6)
+            rcursor_x = round(rp_view._rcursor.value(), 6)
+            delta_x = round(rcursor_x - lcursor_x, 6)
             if delta_x > 0:
-                line_5 += str(lcursor_x) + 's'
-                line_6 += str(rcursor_x) + 's'
+                line_5 += str(lcursor_x) + ' s'
+                line_6 += str(rcursor_x) + ' s'
             else:
-                line_5 += str(rcursor_x) + 's'
-                line_6 += str(lcursor_x) + 's'
-            line_7 += str(abs(delta_x)) + 's'
+                line_5 += str(rcursor_x) + ' s'
+                line_6 += str(lcursor_x) + ' s'
+            line_7 += str(abs(delta_x)) + ' s'
 
         else:
             line_5 += '--'

@@ -251,7 +251,8 @@ class RPModel(QtCore.QObject):
             filtered_data = copy.copy(self._filtered_ts._decimated_data_list[0])
 
         self._event_finder = event_finder.EventFinder(copy.copy(self._main_ts._decimated_data_list[0]), ti = ti, tf = tf, \
-            self._baseline_avg_length, self._trigger_sigma_threshold, self._max_search_length, filtered_data = filtered_data, go_past_length = 0)
+            baseline_avg_length = self._baseline_avg_length, trigger_sigma_threshold = self._trigger_sigma_threshold, \
+            max_search_length =  self._max_search_length, filtered_data = filtered_data, go_past_length = 0)
 
 
 

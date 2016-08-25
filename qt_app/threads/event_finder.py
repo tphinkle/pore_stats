@@ -47,8 +47,12 @@ class EventFinder(QtCore.QObject):
         if self._tf > raw_data[-1,0]:
             self._tf = raw_data[-1,0]
 
+
+
         self._ii = int(self._ti*self._sampling_frequency)
         self._if = int(self._tf*self._sampling_frequency)
+        print 'times', self._ti, self._tf
+        print 'indices', self._ii, self._if
 
         self._raw_data = copy.copy(raw_data[self._ii:self._if,:])
         if filtered_data != None:
@@ -66,7 +70,9 @@ class EventFinder(QtCore.QObject):
     @QtCore.pyqtSlot()
     def find_events(self):
 
-        index = 0#1*self._ii
+        index = 0
+        start_index = 0
+        stop_index = 0
 
 
 

@@ -188,9 +188,6 @@ class RPController(QtCore.QObject):
         rp_view.key_pressed.connect(lambda key: \
             self.catch_key_press(rp_model, rp_view, key))
 
-        rp_view.key_released.connect(lambda key: \
-            self.catch_key_release(rp_model, rp_view, key))
-
         return
 
     def catch_key_press(self, rp_model, rp_view, key):
@@ -574,6 +571,43 @@ class RPController(QtCore.QObject):
 
         return
 
+    def update_stats_plot(self, rp_model, rp_view):
+        """
+        * Description: Updates the stats plot markers to reflect status of selected,
+          unselected, and targeted events.
+        * Return:
+        * Arguments:
+            -
+        """
+
+        pen_types = [rp_view.pen_4, rp_view.pen_2]
+        brush_types = [rp_view.brush_4, rp_view.brush_2]
+        symbol_types = ['o', 'x']
+        pens = [pen_types[int(rp_model._event_manager.is_selected(e))] for e in rp_model._event_manager._events]
+        brushes = [brush_types[int(rp_model._event_manager.is_selected(e))] for e in rp_model._event_manager._events]
+        symbols = [symbol_types[int(rp_model._event_manager.is_selected(e))] for e in rp_model._event_manager._events]
+        symbols[rp_model._event_manager.get_targeted_index()] = 's'
+
+        rp_view._stats_plot_item.setPen(pens)
+        rp_view._stats_plot_item.setBrush(brushes)
+        rp_view._stats_plot_item.setSymbol(symbols)
+
+        return
+
+    def change_targeted_event(self, rp_model, rp_view, targeted_event):
+        """
+        * Description: Commands the rp_model._event_manager to change its targeted event,
+          and commands the View to update its rp_view._targeted_event_plot_item data and
+          the marker used in the rp_view._stats_plot
+        * Return:
+        * Arguments:
+            -
+        """
+        rp_model._event_manager._targeted_event = targeted_event
+        self.plot_targeted_event(rp_model, rp_view, targeted_event)
+        self.update_stats_plot(rp_model, rp_view)
+
+        return
 
 
     def target_previous_event(self, rp_model, rp_view):
@@ -585,10 +619,9 @@ class RPController(QtCore.QObject):
         * Return:
         * Arguments:
         """
-        rp_model._event_manager.decrement_targeted_event()
-        targeted_event = rp_model._event_manager._targeted_event
+        targeted_event = rp_model._event_manager.get_previous_targeted_event()
 
-        self.plot_targeted_event(rp_model, rp_view, targeted_event)
+        self.change_targeted_event(rp_model, rp_view, targeted_event)
         return
 
     def target_next_event(self, rp_model, rp_view):
@@ -600,10 +633,9 @@ class RPController(QtCore.QObject):
         * Return:
         * Arguments:
         """
-        rp_model._event_manager.increment_targeted_event()
-        targeted_event = rp_model._event_manager._targeted_event
+        targeted_event = rp_model._event_manager.get_next_targeted_event()
+        self.change_targeted_event(rp_model, rp_view, targeted_event)
 
-        self.plot_targeted_event(rp_model, rp_view, targeted_event)
         return
 
 
@@ -697,6 +729,8 @@ class RPController(QtCore.QObject):
         for event in events:
             self.select_event(rp_model, rp_view, event)
 
+        self.change_targeted_event(rp_model, rp_view, rp_model._event_manager._targeted_event)
+
         return
 
     def plot_targeted_event(self, rp_model, rp_view, targeted_event):
@@ -717,17 +751,31 @@ class RPController(QtCore.QObject):
         rp_view._targeted_event_plot_item.setPen(pen)
         rp_view._targeted_event_plot_item.setData(targeted_event._data)
 
-        x = float((np.max(targeted_event._data[:,0])+np.min(targeted_event._data[:,0]))/2.)
-        y = float(np.max(targeted_event._data[:,1]))
+
 
         self.update_main_plot_text(rp_model, rp_view)
         QtCore.QCoreApplication.processEvents()
 
-        rp_view._targeted_event_marker_scatter_item.setData([x], [y])
+        self.update_targeted_event_marker_scatter_item(rp_model, rp_view, targeted_event)
 
 
 
         return
+
+    def update_targeted_event_marker_scatter_item(self, rp_model, rp_view, targeted_event):
+        """
+        * Description: Updates the indicator in the main plot to show where the targeted
+          event is.
+        * Return:
+        * Arguments:
+            - targeted_event: The RPEvent that is targeted.
+        """
+        # Get coordinates of marker
+        x = float((np.max(targeted_event._data[:,0])+np.min(targeted_event._data[:,0]))/2.)
+        offset = 1000
+        y = float(np.max(targeted_event._data[:,1])) + offset
+
+        rp_view._targeted_event_marker_scatter_item.setData([x], [y])
 
 
     def main_plot_clicked(self, rp_model, rp_view, mouse_click):
@@ -757,8 +805,7 @@ class RPController(QtCore.QObject):
                 clicked_event_plot_item = event_plot_item
 
         if clicked_event != None and clicked_event_plot_item != None:
-            rp_model._event_manager.set_targeted_event(clicked_event)
-            self.plot_targeted_event(rp_model, rp_view, clicked_event)
+            self.change_targeted_event(rp_model, rp_view, clicked_event)
 
             if mouse_click.double():
                 self.toggle_select_event(rp_model, rp_view, clicked_event)
@@ -808,20 +855,9 @@ class RPController(QtCore.QObject):
 
         # Update the stats plot
 
-        pen_types = [rp_view.pen_4, rp_view.pen_2]
-        brush_types = [rp_view.brush_4, rp_view.brush_2]
-        symbol_types = ['o', 'x']
-        pens = [pen_types[int(rp_model._event_manager.is_selected(e))] for e in rp_model._event_manager._events]
-        brushes = [brush_types[int(rp_model._event_manager.is_selected(e))] for e in rp_model._event_manager._events]
-        symbols = [symbol_types[int(rp_model._event_manager.is_selected(e))] for e in rp_model._event_manager._events]
-        rp_view._stats_plot_item.setPen(pens)
-        rp_view._stats_plot_item.setBrush(brushes)
-        rp_view._stats_plot_item.setSymbol(symbols)
+        self.update_stats_plot(rp_model, rp_view)
 
 
-        #stats_plot_index = self.get_event_stats_index(rp_model, rp_view, event)
-        #rp_view._stats_plot_item.data[stats_plot_index]['pen'] = fn.mkPen(rp_view.pen_2)
-        #rp_view._stats_plot_item.updateSpots()
 
 
         # Update main plot text
@@ -851,21 +887,8 @@ class RPController(QtCore.QObject):
         if rp_model._event_manager.is_targeted(event):
             rp_view._targeted_event_plot_item.setPen(rp_view.pen_4)
 
+        self.update_stats_plot(rp_model, rp_view)
 
-        # Update stats plot
-        pen_types = [rp_view.pen_4, rp_view.pen_2]
-        brush_types = [rp_view.brush_4, rp_view.brush_2]
-        symbol_types = ['o', 'x']
-        pens = [pen_types[int(rp_model._event_manager.is_selected(e))] for e in rp_model._event_manager._events]
-        brushes = [brush_types[int(rp_model._event_manager.is_selected(e))] for e in rp_model._event_manager._events]
-        symbols = [symbol_types[int(rp_model._event_manager.is_selected(e))] for e in rp_model._event_manager._events]
-        rp_view._stats_plot_item.setPen(pens)
-        rp_view._stats_plot_item.setBrush(brushes)
-        rp_view._stats_plot_item.setSymbol(symbols)
-
-        #stats_plot_index = self.get_event_stats_index(rp_model, rp_view, event)
-        #rp_view._stats_plot_item.data[stats_plot_index]['pen'] = fn.mkPen(rp_view.pen_4)
-        #rp_view._stats_plot_item.updateSpots()
 
         # Update main plot text
         self.update_main_plot_text(rp_model, rp_view)
@@ -909,11 +932,6 @@ class RPController(QtCore.QObject):
         return index
 
 
-
-    def targeted_event_plot_clicked(self, rp_model, rp_view, mouse_click):
-        pass
-        #if mouse_click.double():
-            #rp_model._event_manager.toggle_selected(rp_model._event_manager._targeted_event)
 
 
 
@@ -1023,8 +1041,9 @@ class RPController(QtCore.QObject):
 
         for event in rp_model._event_manager._events:
             if ((abs(amp - event._amplitude) < epsilon) and (abs(dur - event._duration) < epsilon)):
-                rp_model._event_manager.set_targeted_event(event)
-                self.plot_targeted_event(rp_model, rp_view, event)
+                self.change_targeted_event(rp_model, rp_view, event)
+                #rp_model._event_manager.set_targeted_event(event)
+                #self.plot_targeted_event(rp_model, rp_view, event)
 
                 break
 

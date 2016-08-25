@@ -142,6 +142,12 @@ class RPController(QtCore.QObject):
         rp_view._predict_button.clicked.connect(lambda: \
             self.predict_select_unselect(rp_model, rp_view))
 
+        rp_view._select_all_button.clicked.connect(lambda: \
+            self.select_all_events(rp_model, rp_view))
+
+        rp_view._unselect_all_button.clicked.connect(lambda: \
+            self.unselect_all_events(rp_model, rp_view))
+
 
         # Check boxes
         rp_view._use_main_checkbox.stateChanged.connect(lambda: \
@@ -532,6 +538,8 @@ class RPController(QtCore.QObject):
         # Clear Model
         rp_model._event_manager.clear_events()
 
+
+
         return
 
 
@@ -760,14 +768,9 @@ class RPController(QtCore.QObject):
         rp_view._targeted_event_plot_item.setPen(pen)
         rp_view._targeted_event_plot_item.setData(targeted_event._data)
 
-
-
-
-        QtCore.QCoreApplication.processEvents()
-
         self.update_targeted_event_marker_scatter_item(rp_model, rp_view, targeted_event)
 
-
+        QtCore.QCoreApplication.processEvents()
 
         return
 
@@ -785,6 +788,8 @@ class RPController(QtCore.QObject):
         y = float(np.max(targeted_event._data[:,1])) + offset
 
         rp_view._targeted_event_marker_scatter_item.setData([x], [y])
+
+        return
 
 
     def main_plot_clicked(self, rp_model, rp_view, mouse_click):
@@ -1056,4 +1061,15 @@ class RPController(QtCore.QObject):
 
                 break
 
+        return
+
+
+    def select_all_events(self, rp_model, rp_view):
+        for i, event in enumerate(rp_model._event_manager._events):
+            self.select_event(rp_model, rp_view, event)
+        return
+
+    def unselect_all_events(self, rp_model, rp_view):
+        for i, event in enumerate(rp_model._event_manager._events):
+            self.unselect_event(rp_model, rp_view, event)
         return

@@ -280,6 +280,12 @@ class RPView(QtGui.QWidget):
         self._predict_button = QtGui.QPushButton('Predict\nevents', parent = self._controls_pane)
         self._predict_button.setGeometry(500,0,100,100)
 
+        self._select_all_button = QtGui.QPushButton('Accept\nall', parent = self._controls_pane)
+        self._select_all_button.setGeometry(400,100,100,100)
+
+        self._unselect_all_button = QtGui.QPushButton('Reject\nall', parent = self._controls_pane)
+        self._unselect_all_button.setGeometry(500,100,100,100)
+
         # Set up checkboxes
         self._use_main_checkbox = QtGui.QCheckBox('Use raw', parent = self._controls_pane)
         self._use_main_checkbox.setCheckState(QtCore.Qt.Checked)
@@ -351,6 +357,8 @@ class RPView(QtGui.QWidget):
         self._find_events_button.setEnabled(enable)
         self._save_events_button.setEnabled(enable)
         self._predict_button.setEnabled(enable)
+        self._select_all_button.setEnabled(enable)
+        self._unselect_all_button.setEnabled(enable)
 
         self._baseline_avg_length_field.setEnabled(enable)
         self._trigger_sigma_threshold_field.setEnabled(enable)

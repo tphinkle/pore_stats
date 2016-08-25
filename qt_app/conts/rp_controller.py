@@ -507,13 +507,16 @@ class RPController(QtCore.QObject):
 
             # In case the left cursor is to the right of the right cursor...
             if ti > tf:
-                ti = temp
-                ti = t1
+                temp = ti
+                ti = tf
                 tf = temp
 
-            rp_model.find_events(ti = ti, tf = tf, filter = filter)
 
-        rp_model.find_events(filter = filter)
+        else:
+            ti = -1
+            tf = float('inf')
+
+        rp_model.find_events(ti = ti, tf = tf, filter = filter)
 
         return
 

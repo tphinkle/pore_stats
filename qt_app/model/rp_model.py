@@ -248,12 +248,11 @@ class RPModel(QtCore.QObject):
         if filter == False:
             filtered_data = None
         else:
-            filtered_data = copy.copy(self._filtered_ts._decimated_data_list[0])
+            filtered_data = self._filtered_ts._decimated_data_list[0]
 
         self._event_finder = event_finder.EventFinder(copy.copy(self._main_ts._decimated_data_list[0]), ti = ti, tf = tf, \
             baseline_avg_length = self._baseline_avg_length, trigger_sigma_threshold = self._trigger_sigma_threshold, \
             max_search_length =  self._max_search_length, filtered_data = filtered_data, go_past_length = 0)
-
 
 
         self._event_finder.moveToThread(self._event_thread)
@@ -264,9 +263,11 @@ class RPModel(QtCore.QObject):
         self.connect(self._event_finder, QtCore.SIGNAL('event_found(PyQt_PyObject)'), self._event_manager.add_event)
 
         # Process all event plotting at conclusion of search
+        
         self.connect(self._event_finder, QtCore.SIGNAL('finished()'), self.event_added)
         self.connect(self._event_finder, QtCore.SIGNAL('finished()'), self.set_not_busy)
 
         self._event_thread.start()
+
 
         return

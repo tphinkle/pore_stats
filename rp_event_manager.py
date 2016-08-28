@@ -1,5 +1,6 @@
 import csv
 import copy
+import numpy as np
 
 class RPEventManager(object):
     def __init__(self):
@@ -10,12 +11,15 @@ class RPEventManager(object):
         self._targeted_event = None
 
 
-    def add_event(self, event):
-        self._events.append(event)
-        self._selected_events.append(event)
-        event._id = len(self._events)
+    def add_events(self, events):
+        for event in events:
+            event._id = len(self._events)
+            self._events.append(event)
+
+        self.select_event(events[0])
+
         if self._targeted_event == None:
-            self._targeted_event = event
+            self._targeted_event = events[0]
 
         self.sort_events(self._events)
         self.sort_events(self._selected_events)
@@ -51,28 +55,68 @@ class RPEventManager(object):
         return
 
     def increment_targeted_event(self):
-        targeted_id = self._targeted_event._id
+        try:
+            targeted_id = self._targeted_event._id
 
-        for i, event in enumerate(self._events):
-            if event._id == targeted_id:
-                targeted_index = (i + 1)%len(self._events)
-                break
+            for i, event in enumerate(self._events):
+                if event._id == targeted_id:
+                    targeted_index = (i + 1)%len(self._events)
+                    break
 
-        self._targeted_event = self._events[targeted_index]
+            self._targeted_event = self._events[targeted_index]
+
+        except:
+            pass
 
         return
 
     def decrement_targeted_event(self):
-        targeted_id = self._targeted_event._id
-        targeted_index = 0
-        for i, event in enumerate(self._events):
-            if event._id == targeted_id:
-                targeted_index = (i - 1)%len(self._events)
-                break
+        try:
+            targeted_id = self._targeted_event._id
+            targeted_index = 0
+            for i, event in enumerate(self._events):
+                if event._id == targeted_id:
+                    targeted_index = (i - 1)%len(self._events)
+                    break
 
-        self._targeted_event = self._events[targeted_index]
+            self._targeted_event = self._events[targeted_index]
+
+        except:
+            pass
 
         return
+
+    def get_next_targeted_event(self):
+        try:
+            targeted_id = self._targeted_event._id
+            targeted_index = 0
+            for i, event in enumerate(self._events):
+                if event._id == targeted_id:
+                    targeted_index = (i + 1)%len(self._events)
+                    break
+
+
+
+        except:
+            pass
+
+        return self._events[targeted_index]
+
+    def get_previous_targeted_event(self):
+        try:
+            targeted_id = self._targeted_event._id
+            targeted_index = 0
+            for i, event in enumerate(self._events):
+                if event._id == targeted_id:
+                    targeted_index = (i - 1)%len(self._events)
+                    break
+
+
+
+        except:
+            pass
+
+        return self._events[targeted_index]
 
     def toggle_selected(self, event):
         event_id = event._id
@@ -109,6 +153,11 @@ class RPEventManager(object):
 
         return is_selected
 
+    def get_targeted_index(self):
+        for i, event in enumerate(self._events):
+            if self.is_targeted(event):
+                return i
+
     def is_targeted(self, event):
         is_targeted = False
         if self._targeted_event._id == event._id:
@@ -135,3 +184,35 @@ class RPEventManager(object):
         f.close()
 
         return
+
+    def get_selected_dur_amp(self):
+        """
+        * Description: Returns a 2-D numpy array of duration and amplitude for all
+          selected events (e.g. to make a scatter plot).
+        * Return: 2-D numpy array of duration and amplitude (np.array)
+        * Arguments:
+        """
+
+        dur_amp = np.empty((len(self._selected_events), 2), dtype = np.float32)
+
+        for i, event in enumerate(self._selected_events):
+            dur_amp[i,0] = event._duration
+            dur_amp[i,1] = event._amplitude
+
+        return dur_amp
+
+    def get_unselected_dur_amp(self):
+        """
+        * Description: Returns a 2-D numpy array of duration and amplitude for all
+          unselected events (e.g. to make a scatter plot).
+        * Return: 2-D numpy array of duration and amplitude (np.array)
+        * Arguments:
+        """
+
+        dur_amp = np.empty((len(self._events) - len(self._selected_events), 2), dtype = np.float32)
+
+        for i, event in enumerate([e for e in self._events if (self.is_selected(e) == False)]):
+            dur_amp[i,0] = event._duration
+            dur_amp[i,1] = event._amplitude
+
+        return dur_amp

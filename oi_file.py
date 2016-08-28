@@ -31,7 +31,7 @@ Constants
 """
 FFMPEG_BIN_FILENAME = '/home/preston/ffmpeg-3.0.2-64bit-static/ffmpeg'
 
-BVI_HEADER_BYTES = 6
+BVI_HEADER_BYTES = 12
 
 """
 Classes
@@ -124,7 +124,7 @@ def get_dimensions_bvi(filepath):
 
     return dim0, dim1
 
-def save_oi_file(input_filepath, output_filepath, alpha = 1, beta = 0):
+def mp4_to_oi(input_filepath, output_filepath, alpha = 1, beta = 0):
     """
     * Description:
     * Return:
@@ -165,10 +165,13 @@ def get_frame_bvi(filehandle, frame_num, dim0, dim1):
     * Arguments:
         -
     """
-    filehandle.seek(BVI_HEADER_BYTES+2*dim0*dim1*frame_num)
-    data = filehandle.read(2*dim0*dim1)
-    data = np.fromstring(data).reshape()
+    filehandle.seek(BVI_HEADER_BYTES+4*dim0*dim1*frame_num)
+    print dim0*dim1
+    data = filehandle.read(4*dim0*dim1)
+
+    data = np.fromstring(data, dtype = 'float32').reshape((dim0, dim1))
     print data.shape
+
 
 
     return data

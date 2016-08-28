@@ -225,6 +225,7 @@ def atf_to_bts(file_path, current_column = 1, byte_type = 'd'):
             voltages[i] = round(float(row[2*(i+1)]), 1)
 
         print 'num_voltages = ', num_voltages
+        print 'voltages = ', voltages
         # Create the matrix
         # Create empty list to hold all
         data=np.empty((file_length, num_voltages+1)) # Add time data
@@ -240,7 +241,7 @@ def atf_to_bts(file_path, current_column = 1, byte_type = 'd'):
         input_file_handle.close()
 
         for i in range(num_voltages):
-            output_file_path = file_path.split('.')[0]+'V'+str(voltages[i]).replace('.', 'p')+'.bts'
+            output_file_path = file_path.split('.')[0]+'V_'+str(voltages[i]).replace('.', 'p')+'.bts'
             np_to_bts(output_file_path, data[:,[0,i+1]])
 
 
@@ -348,6 +349,7 @@ def get_data(file_path, start = -1, stop = -1, file_length = None):
         return get_data_raw(file_path, start, stop, file_length)
 
     else:
+        print 'Did not recognize file type.'
         return None
 
 

@@ -393,36 +393,7 @@ def plot_highlighted_frame(frame, cluster_list):
     return
 
 
-def find_clusters(frame, template_frame, threshold_difference = 15,
-                  cluster_threshold = 20):
-    """
-    * Description: Calling function to start a recursive search for
-      clusters of differing pixels between a frame and template frame.
-    * Return: List of pixel clusters ('cluster_list', List [] of 2-D numpy
-      arrays)
-    * Arguments:
-        - frame: The frame to find clusters in
-        - template_frame: The frame to compare to
-        - threshold_difference (optional): Minimum difference in pixel
-          brightness for pixel to be flagged
-        - cluster_threshold (optional): Minimum number of pixels in a cluster
-          for cluster to be considered
-    """
-    negative_frame=abs(frame-template_frame)
-    cluster_list = []
-    pixel_check_array=np.ones((negative_frame.shape[0], negative_frame.shape[1]))
 
-    for i in xrange(pixel_check_array.shape[0]):
-        for j in xrange(pixel_check_array.shape[1]):
-            if pixel_check_array[i,j]==1:
-                if negative_frame[i,j] >= threshold_difference:
-                    cluster_pixels, pixel_check_array=add_pixel_to_cluster\
-                    (negative_frame, pixel_check_array, i, j, threshold_difference)
-
-                    if cluster_pixels.shape[0]>cluster_threshold:
-                        cluster_list.append(cluster_pixels)
-
-    return cluster_list
 
 def find_clusters_percentage_based(frame, template_frame, threshold_difference = .01,
                   cluster_threshold = 20):
@@ -801,7 +772,7 @@ def find_events_bvi(filepath, threshold_difference = .0375, cluster_threshold = 
 
     # Define template frame
 
-    data = np.memmap(filepath, mode = 'r', dtype = 'float32', offset = tf_start*bytes_per_frame,\
+    data = np.memmap(filepath, mode = 'r', dtype = 'float32', offset = 12+tf_start*bytes_per_frame,\
      shape = (tf_stop-tf_start, dim0, dim1))
 
     if template_frame == None:
@@ -1284,5 +1255,40 @@ def find_events_windows(file_name, windows, threshold_difference = 30,
                               tf_stop = window[1]))
 
     return events
+
+"""
+"""
+def find_clusters(frame, template_frame, threshold_difference = 15,
+                  cluster_threshold = 20):
+"""
+    """
+    * Description: Calling function to start a recursive search for
+      clusters of differing pixels between a frame and template frame.
+    * Return: List of pixel clusters ('cluster_list', List [] of 2-D numpy
+      arrays)
+    * Arguments:
+        - frame: The frame to find clusters in
+        - template_frame: The frame to compare to
+        - threshold_difference (optional): Minimum difference in pixel
+          brightness for pixel to be flagged
+        - cluster_threshold (optional): Minimum number of pixels in a cluster
+          for cluster to be considered
+    """
+"""
+    negative_frame=abs(frame-template_frame)
+    cluster_list = []
+    pixel_check_array=np.ones((negative_frame.shape[0], negative_frame.shape[1]))
+
+    for i in xrange(pixel_check_array.shape[0]):
+        for j in xrange(pixel_check_array.shape[1]):
+            if pixel_check_array[i,j]==1:
+                if negative_frame[i,j] >= threshold_difference:
+                    cluster_pixels, pixel_check_array=add_pixel_to_cluster\
+                    (negative_frame, pixel_check_array, i, j, threshold_difference)
+
+                    if cluster_pixels.shape[0]>cluster_threshold:
+                        cluster_list.append(cluster_pixels)
+
+    return cluster_list
 
 """

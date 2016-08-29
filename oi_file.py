@@ -25,6 +25,7 @@ import struct
 import csv
 import sys
 import copy
+import json
 
 """
 Constants
@@ -64,6 +65,41 @@ def save_oi_events(output_filepath, oi_events):
     f.close()
 
     return
+
+def save_oi_events_json(file_path, oi_events):
+    with open(file_path, 'w') as fh:
+
+        event_json_list = []
+
+        for i, event in enumerate(oi_events):
+            det_list = []
+            for j, det in enumerate(event._detections):
+                tf = det._tf
+                pixels = det._pixels.tolist()
+                det_list.append({'tf': tf, 'pixels': pixels})
+
+            event_json_list.append({'id': str(i),
+                                    'detections': det_list})
+
+        events = {'events': event_json_list}
+
+        json.dump(events, fh)
+
+def load_oi_events_json(file_path):
+        events = []
+
+        with open(file_path, 'r') as fh:
+            json_reader = json.load(fh)
+            for event in json_reader['events']:
+                dets = []
+                for det in event['detections']:
+                    tf = det['tf']
+                    pixels = np.array(det['pixels'])
+                    dets.append(oi.OpticalDetection(tf, pixels))
+
+                events.append(oi.OpticalEvent(dets))
+
+        return events
 
 def load_oi_events(input_filepath):
     f = open(input_filepath, 'r')
@@ -158,13 +194,14 @@ def mp4_to_oi(input_filepath, output_filepath, alpha = 1, beta = 0):
 
 
 
-def get_frame_bvi(filehandle, frame_num, dim0, dim1):
+def get_frame_bvi(filepath, frame_num, dim0, dim1):
     """
     * Description:
     * Return:
     * Arguments:
         -
     """
+    filehandle = open(filepath, 'rb')
     filehandle.seek(BVI_HEADER_BYTES+4*dim0*dim1*frame_num)
     print dim0*dim1
     data = filehandle.read(4*dim0*dim1)

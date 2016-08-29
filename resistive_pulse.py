@@ -22,6 +22,7 @@ RESISTIVE PULSE
 import sys
 sys.path.append('./qt_app/')
 
+import json
 import csv
 from array import array
 import struct
@@ -106,6 +107,24 @@ def open_event_file(file_path):
         pass
     return events
 
+def open_event_file_json(file_path):
+    """
+    * Description: Loads resistive pulse events saved in a .json format
+    * Return:
+    * Arguments:
+        -
+    """
+    events = []
+
+    with open(file_path, 'r') as fh:
+        json_reader = json.load(fh)
+        for event in json_reader['events']:
+            baseline = np.array(event['baseline'])
+            data = np.array(event['data'])
+            events.append(ResistivePulseEvent(data, baseline))
+
+    return events
+
 
 def get_full_baseline(data, baseline_avg_length, trigger_sigma_threshold):
     baseline = np.empty((0,4))
@@ -156,36 +175,9 @@ def get_baseline_1d(data, start, baseline_avg_length, trigger_sigma_threshold):
     baseline = [start, baseline_avg, baseline_avg - trigger_threshold, baseline_avg + trigger_threshold]
     return baseline
 
-def save_events(file_path, events, parameters):
-    """
-    * Description: Saves events to a .evn file.
-    * Return: None
-    * Arguments:
-        - file_path: Name of file to be saved to; appends .evn to end if not present.
-        - events: List of ResistivePulseEvent.
-        - parameters: Dict of parameter names and values used in the event search (a full
-          list of the parameters is not enforced but is encouraged).
-    """
-
-    file_handle = open(file_path, 'w')
-
-    for key, value in parameters.items():
-        file_handle.write(str(key)+'\t'+str(value))
-
-    file_handle.write('*')
 
 
 
-def load_events(file_path):
-    """
-    * Description: Loads events from a .evn file.
-    * Return: List of ResistivePulseEvent
-    * Arguments:
-        - file_path: name of file to be opened. Must be .evn file.
-    """
-
-
-    return
 
 
 def get_sampling_frequency(data):
@@ -285,23 +277,6 @@ def get_maxima_minima(data, sigma=0, refine_length=0, num_maxima = -1, num_minim
 def filter_events_length(events, length):
     filtered_events = [event for event in events if event._data.shape[0] >= length]
     return filtered_events
-
-def save_events(file_path, events, arg_dict):
-    with open(file_path, 'w') as f:
-        reader = csv.writer(f, delimiter = '\t')
-        for key, value in arg_dict.iteritems():
-            f.writerow([key, value])
-
-        for i, event in enumerate(events):
-            f.writerow(['#', i])
-            for row in events._data:
-                f.writerow([row[0], row[1]])
-    return
-
-
-
-
-
 
 
 

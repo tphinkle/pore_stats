@@ -75,9 +75,9 @@ class RPModel(QtCore.QObject):
     def save_events(self):
         file_path = self._active_file._file_path
         file_path = file_path.split('.')[0]
-        file_path = file_path + '_events'
+        file_path = file_path + '_events.json'
 
-        self._event_manager.save_events(file_path)
+        self._event_manager.save_events_json(file_path)
 
         return
 

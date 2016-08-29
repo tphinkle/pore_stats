@@ -1,6 +1,7 @@
 import csv
 import copy
 import numpy as np
+import json
 
 class RPEventManager(object):
     def __init__(self):
@@ -182,6 +183,31 @@ class RPEventManager(object):
                 writer.writerow([row[0], row[1]])
 
         f.close()
+
+        return
+
+    def save_events_json(self, file_path):
+        """
+        * Description: Saves data in .json format
+        * Return: None
+        * Arguments:
+            - file_path: Path to save file
+        """
+
+        print 'saving events!'
+
+        with open(file_path, 'w') as fh:
+
+            event_json_list = []
+
+            for i, event in enumerate(self._selected_events):
+                event_json_list.append({'id': str(event._id),
+                                        'baseline': event._baseline.tolist(),
+                                        'data': event._data.tolist()})
+
+            events = {'events': event_json_list}
+
+            json.dump(events, fh)
 
         return
 

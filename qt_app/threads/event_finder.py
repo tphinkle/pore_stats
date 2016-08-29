@@ -88,12 +88,8 @@ class EventFinder(QtCore.QObject):
 
         events = []
 
-
-
         try:
             while keep_going == True:
-                QtCore.QCoreApplication.processEvents()
-
                 # Look for event start
                 start_trigger_found = False
                 while start_trigger_found == False:
@@ -114,15 +110,16 @@ class EventFinder(QtCore.QObject):
                         if ((self._search_data[index:index+10,1].mean() < baseline[2])
                             or (self._search_data[index:index+10,1].mean() > baseline[3])):
 
-                            #print 'b'
+                            print 'b'
                             # Trigger, get first point to exit baseline
                             start_index = index
+                            print 'time = ', self._search_data[index,0]
 
                             # Requirement for reentry into baseline is that
                             # current returns to value half-way between
                             # the trigger value and the baseline average
                             # value
-                            reentry_threshold = (baseline[1])#+baseline[2])/2. # Was just baseline[1]
+                            reentry_threshold = (baseline[1]+baseline[2])/2. # Was just baseline[1]
                             while start_trigger_found == False:
 
                                 # Check if data point at start_index
@@ -130,7 +127,14 @@ class EventFinder(QtCore.QObject):
                                 if abs(self._search_data[start_index,1]) >= abs(reentry_threshold):
                                     start_trigger_found = True
                                 else:
-                                    start_index-=1
+                                    start_index = (start_index - 1)
+                                    if start_index < stop_index:
+                                        start_index = stop_index
+                                        start_trigger_found = True
+                                        print 'invalid start index'
+                                        #print 'start index < stop index!\n'
+                                        #start_index = stop_index
+                                        #start_trigger_found = True
 
                         else:
                             pass
@@ -156,7 +160,7 @@ class EventFinder(QtCore.QObject):
                         # current returns to value half-way between
                         # the trigger value and the baseline average
                         # value
-                        reentry_threshold=(baseline[1])#+baseline[2])/2. # Was just baseline[1]
+                        reentry_threshold=(baseline[1]+baseline[2])/2. # Was just baseline[1]
                         while stop_trigger_found == False:
                             if abs(self._search_data[stop_index,1])>=abs(reentry_threshold):
 
@@ -172,18 +176,12 @@ class EventFinder(QtCore.QObject):
                                                       self._trigger_sigma_threshold)
 
                         index=stop_index
-                        #event_indices=np.vstack((event_indices,
-                                      #np.array([start_index, stop_index])))
-
-
                         event = rp.ResistivePulseEvent(copy.deepcopy(self._raw_data[start_index+raw_offset:stop_index+1+raw_offset,:]),
                                                           baseline)
                         events.append(event)
                         events_found += 1
-                        print 'event #', events_found, 'index = ', start_index
-
-                        #print 'event # ', events_found, 't_i = ', search_data[start_index,0]
-                        #print start_index, ',', stop_index, events[-1]._data[0,0], ',', events[-1]._data[-1,0]
+                        print 'event #', events_found, 'index = ', start_index, 'time = ', \
+                              self._search_data[start_index,0]
 
                         # Replace event with baseline
 
@@ -198,7 +196,7 @@ class EventFinder(QtCore.QObject):
                             # Replacement interval starts at negative index. Replace with
                             # as much baseline as possible.
                             interval_length = start_index
-                            intervals = (stop_index - start_index)/start_index+1
+                            intervals = (stop_index - start_index)/(start_index+1)+1
                             for i in xrange(intervals):
                                 self._search_data[i*start_index:(i+1)*start_index,1] = \
                                     self._search_data[:start_index,1]

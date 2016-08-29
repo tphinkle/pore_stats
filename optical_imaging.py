@@ -410,23 +410,28 @@ def find_clusters_percentage_based(frame, template_frame, threshold_difference =
         - cluster_threshold (optional): Minimum number of pixels in a cluster
           for cluster to be considered
     """
-    negative_frame=abs(frame-template_frame)
+
+    negative_frame = abs(frame - template_frame)
+
+    threshold_indices = np.where(abs(frame-template_frame) > threshold_difference)
+    threshold_indices = zip(threshold_indices[0], threshold_indices[1])
+
+
+
     cluster_list = []
     pixel_check_array=np.ones((negative_frame.shape[0], negative_frame.shape[1]))
 
-    for i in xrange(pixel_check_array.shape[0]):
-        for j in xrange(pixel_check_array.shape[1]):
-            if pixel_check_array[i,j]==1:
-                #if negative_frame[i,j]/(template_frame[i,j]) >= threshold_difference:
-                if negative_frame[i,j] >= threshold_difference:
-                    cluster_pixels, pixel_check_array=add_pixel_to_cluster\
-                    (negative_frame, pixel_check_array, i, j, threshold_difference)
+    for coord in threshold_indices:
+        i = coord[0]
+        j = coord[1]
+        if pixel_check_array[i,j]==1:
+            cluster_pixels, pixel_check_array=add_pixel_to_cluster\
+            (negative_frame, pixel_check_array, i, j, threshold_difference)
 
-                    if cluster_pixels.shape[0]>cluster_threshold:
-                        cluster_list.append(cluster_pixels)
+            if cluster_pixels.shape[0] > cluster_threshold:
+                cluster_list.append(cluster_pixels)
 
     return cluster_list
-
 
 
 def add_pixel_to_cluster(negative_frame, pixel_check_array, i, j,
@@ -1261,7 +1266,7 @@ def find_events_windows(file_name, windows, threshold_difference = 30,
 def find_clusters(frame, template_frame, threshold_difference = 15,
                   cluster_threshold = 20):
 """
-    """
+"""
     * Description: Calling function to start a recursive search for
       clusters of differing pixels between a frame and template frame.
     * Return: List of pixel clusters ('cluster_list', List [] of 2-D numpy
@@ -1273,7 +1278,7 @@ def find_clusters(frame, template_frame, threshold_difference = 15,
           brightness for pixel to be flagged
         - cluster_threshold (optional): Minimum number of pixels in a cluster
           for cluster to be considered
-    """
+"""
 """
     negative_frame=abs(frame-template_frame)
     cluster_list = []

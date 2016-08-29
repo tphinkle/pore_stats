@@ -79,7 +79,6 @@ class TimeSeries(QtCore.QObject):
 
 
     def add_decimated_data_tier(self, data, tier):
-        print 'adding tier:', tier
         self._decimated_data_list[tier]=data
 
         if tier == 0:
@@ -87,7 +86,6 @@ class TimeSeries(QtCore.QObject):
             self._analyze_ready = True
 
         if tier == self._decimation_tiers - 1:
-            print 'display ready!!!!'
             self._display_ready = True
 
         all_tiers_loaded = True
@@ -145,6 +143,7 @@ class TimeSeries(QtCore.QObject):
 
         data = self._decimated_data_list[decimation_tier][i_i:i_f,:]
 
+        self._current_decimation_factor = self._decimation_factor**decimation_tier
 
         return data
 

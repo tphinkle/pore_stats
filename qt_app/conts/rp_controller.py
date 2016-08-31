@@ -17,6 +17,7 @@ sys.path.append('/home/preston/Desktop/Science/Research/pore_stats/')
 import resistive_pulse as rp
 from rp_model import RPModel
 import rp_predictor
+import pyqtgraph as pg
 
 import PyQt4.QtCore as QtCore
 import PyQt4.QtGui as QtGui
@@ -24,6 +25,7 @@ import time
 import csv
 import numpy as np
 import pyqtgraph.functions as fn
+import time
 
 """
 Classes
@@ -43,9 +45,13 @@ class RPController(QtCore.QObject):
     # KEY MAPPINGS
     KEY_1 = 49
     KEY_2 = 50
+    KEY_3 = 51
+    KEY_4 = 52
     KEY_LSHIFT = 16777248
     KEY_LARROW = 16777234
     KEY_RARROW = 16777236
+    KEY_LCTRL = 16777249
+    KEY_DEL = 16777223
 
     # Temp placement for training data path
     ML_FILE_PATH = '/home/preston/Desktop/Science/Research/pore_stats/qt_app/ML/event_predictions_train'
@@ -184,6 +190,9 @@ class RPController(QtCore.QObject):
         rp_view._stats_plot_item.sigClicked.connect(lambda scatter_plot_item, points: \
             self.handle_stats_plot_click(rp_model, rp_view, scatter_plot_item, points))
 
+        #rp_view._stats_plot.sigMouseHover(lambda: \
+            #self.handle_stats_plot_hover(rp_model, rp_view))
+
         rp_view._lcursor.sigPositionChanged.connect(lambda: \
             self.update_main_plot_text(rp_model, rp_view))
 
@@ -194,6 +203,10 @@ class RPController(QtCore.QObject):
         rp_view.key_pressed.connect(lambda key: \
             self.catch_key_press(rp_model, rp_view, key))
 
+        return
+
+    def handle_stats_plot_hover(self, rp_model, rp_view):
+        print 'hovering!\n', time.time()
         return
 
     def catch_key_press(self, rp_model, rp_view, key):
@@ -207,6 +220,7 @@ class RPController(QtCore.QObject):
         """
         #print 'key_press:', key.key()
         key_press = key.key()
+        print key_press
 
 
         if key_press == self.KEY_1:
@@ -223,6 +237,15 @@ class RPController(QtCore.QObject):
 
         elif key_press == self.KEY_LSHIFT:
             self.toggle_cursor_mode(rp_model, rp_view)
+
+        elif key_press == self.KEY_LCTRL:
+            self.toggle_stats_roi_mode(rp_model, rp_view)
+
+        elif key_press == self.KEY_3:
+            self.select_events_roi(rp_model, rp_view)
+
+        elif key_press == self.KEY_4:
+            self.unselect_events_roi(rp_model, rp_view)
 
         return
 
@@ -241,6 +264,16 @@ class RPController(QtCore.QObject):
 
         return
 
+    def toggle_stats_roi_mode(self, rp_model, rp_view):
+        """
+        * Description: Toggles the visibility of the ROI in the stats plot.
+        * Return:
+        * Arguments:
+            - on: Boolean state (turn on vs. turn off)
+        """
+        rp_view._stats_plot_roi.setVisible(not rp_view._stats_plot_roi.isVisible())
+
+        return
 
 
 
@@ -636,9 +669,18 @@ class RPController(QtCore.QObject):
         * Return:
         * Arguments:
         """
-        targeted_event = rp_model._event_manager.get_previous_targeted_event()
+        # Check if alt held
+        alt_held = (QtGui.QApplication.keyboardModifiers() == QtCore.Qt.AltModifier)
+
+        if alt_held == False:
+            # Move to next event
+            targeted_event = rp_model._event_manager.get_previous_targeted_event()
+        elif alt_held == True:
+            # Move to next selected event
+            targeted_event = rp_model._event_manager.get_previous_targeted_selected_event()
 
         self.change_targeted_event(rp_model, rp_view, targeted_event)
+
         return
 
     def target_next_event(self, rp_model, rp_view):
@@ -650,7 +692,17 @@ class RPController(QtCore.QObject):
         * Return:
         * Arguments:
         """
-        targeted_event = rp_model._event_manager.get_next_targeted_event()
+
+        # Check if alt held
+        alt_held = (QtGui.QApplication.keyboardModifiers() == QtCore.Qt.AltModifier)
+
+        if alt_held == False:
+            # Move to next event
+            targeted_event = rp_model._event_manager.get_next_targeted_event()
+        elif alt_held == True:
+            # Move to next selected event
+            targeted_event = rp_model._event_manager.get_next_targeted_selected_event()
+
         self.change_targeted_event(rp_model, rp_view, targeted_event)
 
         return
@@ -740,13 +792,37 @@ class RPController(QtCore.QObject):
         """
 
         events = rp_model._event_manager._events
+
+        # Tell rp view to plot the event
         for event in events:
             rp_view.plot_new_event(event._data, event._duration, event._amplitude, \
                                    rp_model._event_manager.is_selected(event))
-        for event in events:
-            self.select_event(rp_model, rp_view, event)
 
+
+        # Select all events
+        self.select_all_events(rp_model, rp_view)
+
+        # Set targeted event
         self.change_targeted_event(rp_model, rp_view, rp_model._event_manager._targeted_event)
+
+        # Set stats roi
+        durs = [event._duration for event in rp_model._event_manager._events]
+        amps = [event._amplitude for event in rp_model._event_manager._events]
+        p0 = (min(durs), min(amps))
+        #p1 = (min(durs), max(amps))
+        size = (max(durs), max(amps))
+        #p2 = (max(durs), max(amps))
+        #p3 = (max(durs), min(amps))
+        handles = rp_view._stats_plot_roi.getHandles()
+
+        rp_view._stats_plot_roi.movePoint(handles[0], pg.Point(QtCore.QPointF(p0[0], p0[1])))
+        rp_view._stats_plot_roi.setSize(size)
+        #rp_view._stats_plot_roi.movePoint(handles[1], pg.Point(QtCore.QPointF(p1[0], p1[1])))
+        #rp_view._stats_plot_roi.movePoint(handles[2], pg.Point(QtCore.QPointF(p2[0], p2[1])))
+        #rp_view._stats_plot_roi.movePoint(handles[3], pg.Point(QtCore.QPointF(p3[0], p3[1])))
+
+
+        print type(handles[0])
 
         return
 
@@ -1072,4 +1148,38 @@ class RPController(QtCore.QObject):
     def unselect_all_events(self, rp_model, rp_view):
         for i, event in enumerate(rp_model._event_manager._events):
             self.unselect_event(rp_model, rp_view, event)
+        return
+
+    def select_events_roi(self, rp_model, rp_view):
+        roi_shape = rp_view._stats_plot_roi.mapToItem(rp_view._stats_plot_item, rp_view._stats_plot_roi.shape())
+
+        points = rp_view._stats_plot_item.getData()
+
+        #print points.shape
+
+        points_qt = [QtCore.QPointF(pt[0], pt[1]) for pt in zip(points[0][:].tolist(), points[1][:].tolist())]
+
+
+        targeted_points = [i for i in range(len(points_qt)) if roi_shape.contains(points_qt[i])]
+
+        for i, event in enumerate([rp_model._event_manager._events[i] for i in targeted_points]):
+            self.select_event(rp_model, rp_view, event)
+
+        return
+
+    def unselect_events_roi(self, rp_model, rp_view):
+        roi_shape = rp_view._stats_plot_roi.mapToItem(rp_view._stats_plot_item, rp_view._stats_plot_roi.shape())
+
+        points = rp_view._stats_plot_item.getData()
+
+        #print points.shape
+
+        points_qt = [QtCore.QPointF(pt[0], pt[1]) for pt in zip(points[0][:].tolist(), points[1][:].tolist())]
+
+
+        targeted_points = [i for i in range(len(points_qt)) if roi_shape.contains(points_qt[i])]
+
+        for i, event in enumerate([rp_model._event_manager._events[i] for i in targeted_points]):
+            self.unselect_event(rp_model, rp_view, event)
+
         return

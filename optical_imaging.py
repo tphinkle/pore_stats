@@ -107,7 +107,7 @@ class OpticalEvent:
 
 
     def connect_event(self, optical_event):
-        if self._detections[-1]._tf < optical_event._detections[0]._tf:
+        if self._detections[-1]._tf <= optical_event._detections[0]._tf:
             self._detections = self._detections + optical_event._detections[:]
 
         else:
@@ -596,49 +596,73 @@ def connect_loose_events(events_, tf_sep_threshold = 5, dist_threshold = 20):
         for i, event1 in enumerate(events):
             j_match = None
 
-            # First loop
+            # First loop, find the closest event to event1
             distance = np.array([float("inf") for m in xrange(len(events))], dtype=float)
             for j, event2 in enumerate(events):
+                if i == j:
+                    continue
 
-                if (event1._detections[-1]._tf < event2._detections[0]._tf or
-                    event1._detections[0]._tf > event2._detections[-1]._tf):
+                # Check to see if overlap in time; can't connect overlapping events
+                if (event1._detections[-1]._tf <= event2._detections[0]._tf or
+                    event1._detections[0]._tf >= event2._detections[-1]._tf):
                     overlap = False
                 else:
                     overlap = True
 
+                #print 'ev1:', event1._detections[0]._tf, event1._detections[-1]._tf
+                #print 'ev2:', event2._detections[0]._tf, event2._detections[-1]._tf
+
                 if overlap == False:
-                    if event1._detections[-1]._tf < event2._detections[0]._tf:
+                    #print 'no overlap!'
+                    # No overlap; check to see if should connect.
+
+                    if event1._detections[-1]._tf <= event2._detections[0]._tf:
+                        # Event 1 comes before event 2.
                         tf_sep = event2._detections[0]._tf - event1._detections[-1]._tf
                         if tf_sep <= tf_sep_threshold:
+                            # Time separation is less than threshold sep
                             distance[j] = ((event1._detections[-1]._px - event2._detections[0]._px)**2.+
                                            (event1._detections[-1]._py - event2._detections[0]._py)**2.+
                                            (event1._detections[-1]._tf - event2._detections[0]._tf)**2.)**.5
-
+                            #print 'a'
+                            #print 'xdist:', event1._detections[-1]._px, event2._detections[0]._px
+                            #print 'ydist:', event1._detections[-1]._py, event2._detections[0]._py
 
                     else:
+                        # Event 2 comes before event 1.
                         tf_sep = event1._detections[0]._tf - event2._detections[-1]._tf
                         if tf_sep <= tf_sep_threshold:
+                            # Time separation is less than threshold sep
                             distance[j] = ((event2._detections[-1]._px - event1._detections[0]._px)**2.+
                                            (event2._detections[-1]._py - event1._detections[0]._py)**2.+
                                            (event2._detections[-1]._tf - event1._detections[0]._tf)**2.)**.5
+                            #print 'b'
+                            #print 'xdist:', event2._detections[-1]._px, event1._detections[0]._px
+                            #print 'ydist:', event2._detections[-1]._py, event1._detections[0]._py
 
 
 
             j_match = np.argsort(distance)[0]
             eventj = events[j_match]
+            #print 'first loop match: ', j_match
+            #print 'distance: ', distance[j_match]
+            #print 'all distances: ', distance
 
-            # Second loop
+            # Second loop, find the closest event to the event found in first loop; if the
+            # two are mutually closest, this is accepted.
             distance = np.array([float("inf") for m in xrange(len(events))], dtype=float)
             for k, event3 in enumerate(events):
+                if k == j_match:
+                    continue
 
-                if (eventj._detections[-1]._tf < event3._detections[0]._tf or
-                    eventj._detections[0]._tf > event3._detections[-1]._tf):
+                if (eventj._detections[-1]._tf <= event3._detections[0]._tf or
+                    eventj._detections[0]._tf >= event3._detections[-1]._tf):
                     overlap = False
                 else:
                     overlap = True
 
                 if overlap == False:
-                    if eventj._detections[-1]._tf < event3._detections[0]._tf:
+                    if eventj._detections[-1]._tf <= event3._detections[0]._tf:
                         tf_sep = event3._detections[0]._tf - eventj._detections[-1]._tf
                         if tf_sep <= tf_sep_threshold:
                             distance[k] = ((eventj._detections[-1]._px - event3._detections[0]._px)**2.+
@@ -653,6 +677,7 @@ def connect_loose_events(events_, tf_sep_threshold = 5, dist_threshold = 20):
 
             i_match = np.argsort(distance)[0]
             if ((i_match == i) and (distance[i_match] <= dist_threshold)):
+                #print 'connecting events!'
                 event1.connect_event(eventj)
                 events = [events[k] for k in xrange(0, len(events)) if k != j_match]
                 moves = moves + 1
@@ -788,11 +813,13 @@ def find_events_bvi(filepath, threshold_difference = .0375, cluster_threshold = 
     inactive_events=[]
 
 
-
+    events = []
     # Search frames for clusters
     for tf in xrange(tf_start+1, tf_stop):
 
         frame = data[tf-tf_start,:,:]
+        if tf == tf_start + 1:
+            print frame
 
 
 
@@ -808,21 +835,25 @@ def find_events_bvi(filepath, threshold_difference = .0375, cluster_threshold = 
                               clusters]
 
         if tf % 100 == 0:
-            print 'tf: ', tf, '/', tf_stop, '\tactive:', len(active_events), '\tinactive:', len(inactive_events)
+            print tf
+            #print 'tf: ', tf, '/', tf_stop, '\tactive:', len(active_events), '\tinactive:', len(inactive_events)
+        new_events = [OpticalEvent([detection]) for detection in detections]
+        #active_events, inactive_events = match_events_to_detections(
+                                             #active_events, inactive_events,
+                                             #detections, tf)
 
-        active_events, inactive_events = match_events_to_detections(
-                                             active_events, inactive_events,
-                                             detections, tf)
+        events = connect_loose_events(events + new_events)
 
 
 
     # Append all events that are still active by last frame to inactive_events
     # list
-    for active_event in active_events:
-        inactive_events.append(active_event)
+    #for active_event in active_events:
+        #inactive_events.append(active_event)
 
 
-    return inactive_events
+    #return inactive_events
+    return events
 
 
 

@@ -119,6 +119,41 @@ class RPEventManager(object):
 
         return self._events[targeted_index]
 
+    def get_previous_targeted_selected_event(self):
+        targeted_event_id = self._targeted_event._id
+        new_targeted_event_id = None
+        for i, event in enumerate(self._selected_events):
+            if event._id >= targeted_event_id:
+                new_targeted_event_id = self._selected_events[i-1]._id
+                print new_targeted_event_id
+                break
+
+        if new_targeted_event_id == None:
+            if len(self._selected_events) != 0:
+                new_targeted_event_id = self._selected_events[-1]._id
+            else:
+                new_targeted_event_id = self._targeted_event._id
+
+        return self._events[new_targeted_event_id]
+
+    def get_next_targeted_selected_event(self):
+        targeted_event_id = self._targeted_event._id
+        new_targeted_event_id = None
+        for i, event in enumerate(reversed(self._selected_events)):
+
+            if event._id <= targeted_event_id:
+                new_targeted_event_id = \
+                    self._selected_events[(len(self._selected_events)-i-1+1)%(len(self._selected_events))]._id
+                break
+
+        if new_targeted_event_id == None:
+            if len(self._selected_events) != 0:
+                new_targeted_event_id = self._selected_events[0]._id
+            else:
+                new_targeted_event_id = self._targeted_event._id
+
+        return self._events[new_targeted_event_id]
+
     def toggle_selected(self, event):
         event_id = event._id
         if self.is_selected(event) == True:

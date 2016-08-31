@@ -85,6 +85,7 @@ class RPView(QtGui.QWidget):
         self._main_plot = pg.PlotWidget(parent = self)
         self._main_plot.setLabel('left', text = 'Current (uA)')
         self._main_plot.setLabel('bottom', text = 'Time (s)')
+        self._main_plot.showGrid(x = True, y = True, alpha = 0.2)
 
         self._main_plot_item = pg.PlotDataItem()
         self._main_plot_item.setZValue(0)
@@ -185,6 +186,7 @@ class RPView(QtGui.QWidget):
 
         self._targeted_event_plot.setLabel('left', text = 'Current (uA)')
         self._targeted_event_plot.setLabel('bottom', text = 'Time (s)')
+        self._targeted_event_plot.showGrid(x = True, y = True, alpha = 0.2)
 
         targeted_event_plot_size_policy = QtGui.QSizePolicy()
         targeted_event_plot_size_policy.setVerticalStretch(1)
@@ -230,6 +232,7 @@ class RPView(QtGui.QWidget):
 
         self._stats_plot.setLabel('left', text = 'Current (uA)')
         self._stats_plot.setLabel('bottom', text = 'Time (s)')
+        self._stats_plot.showGrid(x = True, y = True, alpha = 0.2)
 
         stats_plot_size_policy = QtGui.QSizePolicy()
         stats_plot_size_policy.setVerticalStretch(1)
@@ -244,6 +247,10 @@ class RPView(QtGui.QWidget):
         self._stats_plot.addItem(self._stats_plot_item)
 
         parent_geometry = self._stats_plot.geometry()
+
+        self._stats_plot_roi = pg.RectROI((0,0), (1,1))
+        self._stats_plot.addItem(self._stats_plot_roi)
+
 
 
 
@@ -370,3 +377,7 @@ class RPView(QtGui.QWidget):
 
 
         return
+
+
+    def polyline_roi(self):
+        pass

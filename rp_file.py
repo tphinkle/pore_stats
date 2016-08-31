@@ -220,28 +220,36 @@ def atf_to_bts(file_path, current_column = 1, byte_type = 'd'):
         # Get # of voltages taken
         row = input_reader.next()
         num_voltages = (len(row)-1)/2 # Subtract time, divide by two for current/voltage
-        voltages = [0 for i in range(num_voltages)]
-        for i in range(0, num_voltages):
-            voltages[i] = round(float(row[2*(i+1)]), 1)
+
+
 
         print 'num_voltages = ', num_voltages
-        print 'voltages = ', voltages
         # Create the matrix
         # Create empty list to hold all
         data=np.empty((file_length, num_voltages+1)) # Add time data
-
+        voltages = np.empty((file_length, num_voltages))
 
         for i in range(file_length - 1):
+            voltages_same = False
+
 
             row = input_reader.next()
             data[i,0] = float(row[0])
+            #voltages = [0 for i in range(num_voltages)]
             for j in range(num_voltages):
+                #voltages[j] = round(float[row[2*(j+1)]])
                 data[i,j+1] = float(row[2*j+1])
+                voltages[i,j] = round(float(row[2*(j+1)]), 1)
 
         input_file_handle.close()
 
+        voltage_list = [0 for i in range(num_voltages)]
         for i in range(num_voltages):
-            output_file_path = file_path.split('.')[0]+'V_'+str(voltages[i]).replace('.', 'p')+'.bts'
+            voltage_list[i] = voltages[voltages.shape[0]/2,i]
+        print voltage_list
+
+        for i in range(num_voltages):
+            output_file_path = file_path.split('.')[0]+'V_'+str(voltage_list[i]).replace('.', 'p')+'.bts'
             np_to_bts(output_file_path, data[:,[0,i+1]])
 
 

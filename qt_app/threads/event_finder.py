@@ -49,8 +49,8 @@ class EventFinder(QtCore.QObject):
 
 
 
-        self._ii = int(self._ti*self._sampling_frequency)
-        self._if = int(self._tf*self._sampling_frequency)
+        self._ii = int((self._ti-raw_data[0,0])*self._sampling_frequency)
+        self._if = int((self._tf-raw_data[0,0])*self._sampling_frequency)
         print 'times', self._ti, self._tf
         print 'indices', self._ii, self._if
 

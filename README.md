@@ -1,12 +1,10 @@
-# pore_stats
-
 ![pore_stats logo](https://github.com/tphinkle/pore_stats/blob/master/qt_app/logo.png)
 
 
 ## Contents
 1. Overview
-2. Install
-3. Documentation
+2. Event extraction
+3. Analysis
 
 ## 1. Overview
 pore_stats is a software library written in Python for analyzing [resistive pulse](https://en.wikipedia.org/wiki/Tunable_resistive_pulse_sensing) experimental data. The library consists of a GUI program written in PyQt for extracting pulses from the baseline, and modules for analyzing the extracted events.
@@ -40,11 +38,7 @@ pore_stats is a software library written in Python for analyzing [resistive puls
 
 ## 3. Analysis
 
-pore_stats can automatically determine the event __amplitude__, __duration__, and __current levels__ for non-constant pulses.
+- The pore_stats event analysis libraries can automatically determine the event __amplitude__, __duration__, __local minima and maxima__, and __current levels__ for non-constant pulses.
 
-[Event levels](/figures/20um.png)
+- Events are loaded in from the file produced by the event extraction program. An RP event is instantiated as an object of type RPEvent, a class that bundles the event's data and methods for performing calculations and transformations on the data.
 
-
-
-
-[example link](/images/http://example.com/).

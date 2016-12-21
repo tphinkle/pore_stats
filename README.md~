@@ -42,7 +42,7 @@ pore_stats is a software library written in Python for analyzing [resistive puls
 
 ## 3. Analysis
 
-- The pore_stats event analysis libraries can auto<img src="drawing.jpg" alt="Drawing" style="width: 200px;"/>matically determine the event __amplitude__, __duration__, __local minima and maxima__, and __current levels__ for non-constant pulses.
+- The pore_stats event analysis libraries can automatically determine the event __amplitude__, __duration__, __local minima and maxima__, and __current levels__ for non-constant pulses.
 
 - Events are loaded in from the file produced by the event extraction program. An RP event is instantiated as an object of type RPEvent, a class that bundles the event's data and methods for performing calculations and transformations on the data.
 
@@ -50,9 +50,9 @@ pore_stats is a software library written in Python for analyzing [resistive puls
 
 Here are some plots of the data created by using the pore_stats analysis library.
 
-<img src="https://github.com/tphinkle/pore_stats/blob/master/qt_app/demo/analysis_gallery/20um_multievent.png" alt="Drawing" style="width: 200px;"/>
-<img src="https://github.com/tphinkle/pore_stats/blob/master/qt_app/demo/analysis_gallery/HCT-116_7-29_15um-20um_8-2_scatter.png" alt="Drawing" style="width: 200px;"/>
-<img src="https://github.com/tphinkle/pore_stats/blob/master/qt_app/demo/analysis_gallery/HCT-116_multievent_7-10.png" alt="Drawing" style="width: 200px;"/>
+<img src="https://github.com/tphinkle/pore_stats/blob/master/qt_app/demo/analysis_gallery/HCT-116_multievent_7-10.png" alt="multievent" width="200"/>
+<img src="https://github.com/tphinkle/pore_stats/blob/master/qt_app/demo/analysis_gallery/HCT-116_7-29_15um-20um_8-2_scatter.png" alt="scatter" style="width: 200px;"/>
+<img src="https://github.com/tphinkle/pore_stats/blob/master/qt_app/demo/analysis_gallery/HCT-116_multievent_7-10.png" alt="multievent" style="width: 200px;"/>
 
 <img src="https://github.com/tphinkle/pore_stats/blob/master/qt_app/demo/analysis_gallery/HCT-116_peak-distributions_7-29_pr0006.png" alt="Drawing" style="width: 200px;"/>
 <img src="https://github.com/tphinkle/pore_stats/blob/master/qt_app/demo/analysis_gallery/event_durations.png" alt="Drawing" style="width: 200px;"/>

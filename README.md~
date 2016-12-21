@@ -51,18 +51,9 @@ pore_stats is a software library written in Python for analyzing [resistive puls
 Here are some plots of the data created by using the pore_stats analysis library.
 
 <img src="https://github.com/tphinkle/pore_stats/blob/master/qt_app/demo/analysis_gallery/20um_multievent.png" alt="Drawing" style="width: 200px;"/>
-
 <img src="https://github.com/tphinkle/pore_stats/blob/master/qt_app/demo/analysis_gallery/HCT-116_7-29_15um-20um_8-2_scatter.png" alt="Drawing" style="width: 200px;"/>
-
 <img src="https://github.com/tphinkle/pore_stats/blob/master/qt_app/demo/analysis_gallery/HCT-116_multievent_7-10.png" alt="Drawing" style="width: 200px;"/>
 
-<img src="drawing.jpg" alt="Drawing" style="width: 200px;"/>
-
-<img src="drawing.jpg" alt="Drawing" style="width: 200px;"/>
-
-<img src="drawing.jpg" alt="Drawing" style="width: 200px;"/>
-
-<img src="drawing.jpg" alt="Drawing" style="width: 200px;"/>
-
-<img src="drawing.jpg" alt="Drawing" style="width: 200px;"/>
-
+<img src="https://github.com/tphinkle/pore_stats/blob/master/qt_app/demo/analysis_gallery/HCT-116_peak-distributions_7-29_pr0006.png" alt="Drawing" style="width: 200px;"/>
+<img src="https://github.com/tphinkle/pore_stats/blob/master/qt_app/demo/analysis_gallery/event_durations.png" alt="Drawing" style="width: 200px;"/>
+<img src="https://github.com/tphinkle/pore_stats/blob/master/qt_app/demo/analysis_gallery/filtered_psmix.png" alt="Drawing" style="width: 200px;"/>

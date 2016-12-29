@@ -52,6 +52,8 @@ class RPController(QtCore.QObject):
     KEY_RARROW = 16777236
     KEY_LCTRL = 16777249
     KEY_DEL = 16777223
+    KEY_F1 = 16777264
+    KEY_F2 = 16777265
 
     # Temp placement for training data path
     ML_FILE_PATH = '/home/preston/Desktop/Science/Research/pore_stats/qt_app/ML/event_predictions_train'
@@ -235,10 +237,10 @@ class RPController(QtCore.QObject):
         elif key_press == self.KEY_RARROW:
             self.target_next_event(rp_model, rp_view)
 
-        elif key_press == self.KEY_LSHIFT:
+        elif key_press == self.KEY_F1:
             self.toggle_cursor_mode(rp_model, rp_view)
 
-        elif key_press == self.KEY_LCTRL:
+        elif key_press == self.KEY_F2:
             self.toggle_stats_roi_mode(rp_model, rp_view)
 
         elif key_press == self.KEY_3:
@@ -671,13 +673,22 @@ class RPController(QtCore.QObject):
         """
         # Check if alt held
         alt_held = (QtGui.QApplication.keyboardModifiers() == QtCore.Qt.AltModifier)
+        ctrl_held = (QtGui.QApplication.keyboardModifiers() == QtCore.Qt.ControlModifier)
 
-        if alt_held == False:
+        if alt_held == False and ctrl_held == False:
             # Move to next event
             targeted_event = rp_model._event_manager.get_previous_targeted_event()
-        elif alt_held == True:
+        elif alt_held == True and ctrl_held == False:
             # Move to next selected event
             targeted_event = rp_model._event_manager.get_previous_targeted_selected_event()
+
+        elif alt_held == False and ctrl_held == True:
+            # Move to next unselected event
+            targeted_event = rp_model._event_manager.get_previous_targeted_unselected_event()
+
+        else:
+            # Both are held, don't do anything
+            return
 
         self.change_targeted_event(rp_model, rp_view, targeted_event)
 
@@ -695,13 +706,22 @@ class RPController(QtCore.QObject):
 
         # Check if alt held
         alt_held = (QtGui.QApplication.keyboardModifiers() == QtCore.Qt.AltModifier)
+        ctrl_held = (QtGui.QApplication.keyboardModifiers() == QtCore.Qt.ControlModifier)
 
-        if alt_held == False:
+        if alt_held == False and ctrl_held == False:
             # Move to next event
             targeted_event = rp_model._event_manager.get_next_targeted_event()
-        elif alt_held == True:
+        elif alt_held == True and ctrl_held == False:
             # Move to next selected event
             targeted_event = rp_model._event_manager.get_next_targeted_selected_event()
+
+        elif alt_held == False and ctrl_held == True:
+            # Move to next unselected event
+            targeted_event = rp_model._event_manager.get_next_targeted_unselected_event()
+
+        else:
+            # Both are held, don't do anything
+            return
 
         self.change_targeted_event(rp_model, rp_view, targeted_event)
 

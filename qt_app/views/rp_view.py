@@ -147,6 +147,7 @@ class RPView(QtGui.QWidget):
         self._lcursor.setValue(0)
         self._lcursor.setPen(RPView.pen_5)
         self._lcursor.setMovable(True)
+        self._lcursor.setVisible(False)
         self._main_plot.addItem(self._lcursor)
 
 
@@ -155,6 +156,7 @@ class RPView(QtGui.QWidget):
         self._rcursor.setValue(0.5)
         self._rcursor.setPen(RPView.pen_5)
         self._rcursor.setMovable(True)
+        self._rcursor.setVisible(False)
         self._main_plot.addItem(self._rcursor)
 
 
@@ -249,6 +251,7 @@ class RPView(QtGui.QWidget):
         parent_geometry = self._stats_plot.geometry()
 
         self._stats_plot_roi = pg.RectROI((0,0), (1,1))
+        self._stats_plot_roi.setVisible(False)
         self._stats_plot.addItem(self._stats_plot_roi)
 
 
@@ -270,28 +273,28 @@ class RPView(QtGui.QWidget):
 
         # Set up buttons
         self._show_main_data_button = QtGui.QPushButton('Hide\nraw', parent = self._controls_pane)
-        self._show_main_data_button.setGeometry(0,0,100,100)
+        self._show_main_data_button.setGeometry(0,0,100,50)
 
         self._show_baseline_button = QtGui.QPushButton('Show\nbaseline', parent = self._controls_pane)
-        self._show_baseline_button.setGeometry(100,0,100,100)
+        self._show_baseline_button.setGeometry(100,0,100,50)
 
         self._filter_data_button = QtGui.QPushButton('Show\nfiltered data', parent = self._controls_pane)
-        self._filter_data_button.setGeometry(200,0,100,100)
+        self._filter_data_button.setGeometry(200,0,100,50)
 
         self._find_events_button = QtGui.QPushButton('Find\nevents', parent = self._controls_pane)
-        self._find_events_button.setGeometry(300,0,100,100)
+        self._find_events_button.setGeometry(300,0,100,50)
 
         self._save_events_button = QtGui.QPushButton('Save\nevents', parent = self._controls_pane)
-        self._save_events_button.setGeometry(400,0,100,100)
+        self._save_events_button.setGeometry(400,0,100,50)
 
         self._predict_button = QtGui.QPushButton('Predict\nevents', parent = self._controls_pane)
-        self._predict_button.setGeometry(500,0,100,100)
+        self._predict_button.setGeometry(500,0,100,50)
 
         self._select_all_button = QtGui.QPushButton('Accept\nall', parent = self._controls_pane)
-        self._select_all_button.setGeometry(400,100,100,100)
+        self._select_all_button.setGeometry(400,50,100,50)
 
         self._unselect_all_button = QtGui.QPushButton('Reject\nall', parent = self._controls_pane)
-        self._unselect_all_button.setGeometry(500,100,100,100)
+        self._unselect_all_button.setGeometry(500,50,100,50)
 
         # Set up checkboxes
         self._use_main_checkbox = QtGui.QCheckBox('Use raw', parent = self._controls_pane)
@@ -305,31 +308,30 @@ class RPView(QtGui.QWidget):
         # Set up labels
 
         self._baseline_avg_length_label = QtGui.QLabel('Baseline avg length', parent = self._controls_pane, wordWrap = True)
-        self._baseline_avg_length_label.setGeometry(0,100,100,50)
+        self._baseline_avg_length_label.setGeometry(0,50,100,50)
 
         self._trigger_sigma_threshold_label = QtGui.QLabel('Sigma thresh', parent = self._controls_pane, wordWrap = True)
-        self._trigger_sigma_threshold_label.setGeometry(0,150,100,50)
+        self._trigger_sigma_threshold_label.setGeometry(0,100,100,50)
 
         self._max_search_length_label = QtGui.QLabel('Max search length', parent = self._controls_pane, wordWrap = True)
-        self._max_search_length_label.setGeometry(0,200,100,50)
+        self._max_search_length_label.setGeometry(0,150,100,50)
 
         self._filter_frequency_label = QtGui.QLabel('Filter frequency', parent = self._controls_pane, wordWrap = True)
-        self._filter_frequency_label.setGeometry(300,200,100,50)
+        self._filter_frequency_label.setGeometry(200,50,100,50)
 
         # Set up fields
         self._baseline_avg_length_field = QtGui.QLineEdit(parent = self._controls_pane)
-        self._baseline_avg_length_field.setGeometry(100,100,100,50)
-
+        self._baseline_avg_length_field.setGeometry(100,50,100,50)
 
         self._trigger_sigma_threshold_field = QtGui.QLineEdit(parent = self._controls_pane)
-        self._trigger_sigma_threshold_field.setGeometry(100,150,100,50)
+        self._trigger_sigma_threshold_field.setGeometry(100,100,100,50)
 
 
         self._max_search_length_field = QtGui.QLineEdit(parent = self._controls_pane)
-        self._max_search_length_field.setGeometry(100,200,100,50)
+        self._max_search_length_field.setGeometry(100,150,100,50)
 
         self._filter_frequency_field = QtGui.QLineEdit(parent = self._controls_pane)
-        self._filter_frequency_field.setGeometry(400,200,100,50)
+        self._filter_frequency_field.setGeometry(300,50,100,50)
 
         return
 

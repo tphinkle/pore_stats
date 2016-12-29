@@ -62,6 +62,7 @@ class MainController(QtCore.QObject):
         * Arguments:
         """
         self._main_view._rp_load_file_action.triggered.connect(self.create_rp_controller)
+        self._main_view._show_controls_action.triggered.connect(self.create_controls_window)
 
         return
 
@@ -74,5 +75,10 @@ class MainController(QtCore.QObject):
         """
         self._controllers.append(rp_controller.RPController(self._main_model,\
          self._main_view))
+
+        return
+
+    def create_controls_window(self):
+        self._main_view.create_controls_window()
 
         return

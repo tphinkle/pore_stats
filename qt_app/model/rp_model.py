@@ -242,7 +242,7 @@ class RPModel(QtCore.QObject):
 
         self._event_manager._parameters = parameters
 
-        self._event_thread = QtCore.QThread()
+        #self._event_thread = QtCore.QThread()
 
         if filter == False:
             filtered_data = None
@@ -254,17 +254,21 @@ class RPModel(QtCore.QObject):
             max_search_length =  self._max_search_length, filtered_data = filtered_data, go_past_length = 0)
 
 
-        self._event_finder.moveToThread(self._event_thread)
-        self.connect(self._event_thread, QtCore.SIGNAL('started()'), self.set_busy)
-        self.connect(self._event_thread, QtCore.SIGNAL('started()'), self._event_finder.find_events)
+        #self._event_finder.moveToThread(self._event_thread)
+
+        #self.connect(self._event_thread, QtCore.SIGNAL('started()'), self.set_busy)
+        #self.connect(self._event_thread, QtCore.SIGNAL('started()'), self._event_finder.find_events)
 
         # Process all event detections at conclusion of search
+
         self.connect(self._event_finder, QtCore.SIGNAL('events_found(PyQt_PyObject)'),\
                      self._event_manager.add_events)
         self.connect(self._event_finder, QtCore.SIGNAL('finished()'), self.event_added)
         self.connect(self._event_finder, QtCore.SIGNAL('finished()'), self.set_not_busy)
 
-        self._event_thread.start()
+        self._event_finder.start()
+
+        #self._event_thread.start()
 
 
         return

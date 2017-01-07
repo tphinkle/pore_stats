@@ -13,7 +13,7 @@ import numpy as np
 import copy
 import time
 
-class EventFinder(QtCore.QObject):
+class EventFinder(QtCore.QThread):
 
     event_found = QtCore.pyqtSignal('PyQt_PyObject')
     finished = QtCore.pyqtSignal()
@@ -68,7 +68,7 @@ class EventFinder(QtCore.QObject):
 
 
     @QtCore.pyqtSlot()
-    def find_events(self):
+    def run(self):
 
         index = 0
         start_index = 0

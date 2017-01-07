@@ -9,8 +9,6 @@ import PyQt4.QtGui as QtGui
 
 class RPView(QtGui.QWidget):
 
-
-
     # Gray pen
     pen_0 = QtGui.QPen(QtGui.QColor(200,200,200))
 

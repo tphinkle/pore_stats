@@ -15,7 +15,6 @@ PORE_STATS_DIR = '/home/preston/Desktop/Science/Research/pore_stats/'
 sys.path.append(PORE_STATS_DIR)
 
 class RPModel(QtCore.QObject):
-
     # Class variables
     display_decimation_threshold = 100000
     decimation_factor = 2

@@ -187,7 +187,7 @@ def get_sampling_frequency(data):
 
 
 
-def get_maxima_minima(data, sigma=0, refine_length=0, num_maxima = -1, num_minima = -1):
+def get_maxima_minima(data, sigma=0, refine_length=0, num_maxima = 0, num_minima = 0, return_by = 'accel'):
     """
     * Description: Finds the maxima, minima within 2-d, evenly sampled data.
         - First, applies a Gaussian filter (scipy) to the data to smooth it
@@ -208,6 +208,8 @@ def get_maxima_minima(data, sigma=0, refine_length=0, num_maxima = -1, num_minim
     # Smooth data
     if sigma != 0:
         smoothed_data = gaussian_filter(data, sigma=sigma)
+    else:
+        smoothed_data = np.array(data)
 
     # Find extrema
     maxima=[]
@@ -215,7 +217,7 @@ def get_maxima_minima(data, sigma=0, refine_length=0, num_maxima = -1, num_minim
     minima=[]
     d2_minima = []
 
-    # Calculate first derivatives everywhere--derivative defined as average  of slopes of
+    # Calculate first derivatives everywhere--derivative defined as average of slopes of
     # point-in-question to left neightbor and right neighbor to left neighbor.
     d_data=[((smoothed_data[i]-smoothed_data[i-1])/2.+
             (smoothed_data[i]-smoothed_data[i-1]))/2.
@@ -256,20 +258,36 @@ def get_maxima_minima(data, sigma=0, refine_length=0, num_maxima = -1, num_minim
             minima[i] = minimum + (np.argsort(temp_data)[0]-refine_length)
 
 
+    # Convert to np array for easier indexing.
+    minima = np.array(minima)
+    maxima = np.array(maxima)
+    d2_minima = np.array(d2_minima)
+    d2_maxima = np.array(d2_maxima)
 
-    if num_maxima != -1:
+
+    # Determine which maxima to return
+    if num_maxima > 0:
         new_maxima = []
-        for arg in np.argsort(np.array(d2_maxima))[-num_maxima:]:
-            new_maxima.append(maxima[arg])
-        new_maxima.sort()
-        maxima = new_maxima[:]
-    if num_minima != -1:
-        new_minima = []
-        for arg in np.argsort(np.array(d2_minima))[-num_minima:]:
-            new_minima.append(minima[arg])
+        if return_by == 'accel':
+            maxima = maxima[np.argsort(d2_maxima)[-num_maxima:]]
+        elif return_by == 'high':
+            maxima = maxima[np.argsort(smoothed_data[maxima])[-num_maxima:]]
+        elif return_by == 'low':
+            maxima = maxima[np.argsort(smoothed_data[maxima])[:num_maxima]]
+        else:
+            raise TypeError('keyword ' + return_by + ' is not recognized; valid keywords are: ["accel", "high", "low"]')
 
-        new_minima.sort()
-        minima = new_minima[:]
+    # Determine which minima to return
+    if num_minima > 0 and minima.shape[0] > 1:
+        new_minima = []
+        if return_by == 'accel':
+            minima = minima[np.argsort(d2_minima)[-num_minima:]]
+        elif return_by == 'high':
+            minima = minima[np.argsort(smoothed_data[minima])[-num_minima:]]
+        elif return_by == 'low':
+            minima = minima[np.argsort(smoothed_data[minima])][:num_minima]
+        else:
+            raise TypeError('keyword ' + return_by + ' is not recognized; valid keywords are: ["accel", "high", "low"]')
 
     return maxima, minima
 

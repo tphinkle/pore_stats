@@ -144,7 +144,6 @@ class EventFinder(QtCore.QThread):
                 # Look for event stop
                 stop_trigger_found = False
                 while stop_trigger_found == False:
-                    #print 'c'
                     in_baseline = False
 
                     if ((self._search_data[index:index+10,1].mean() > baseline[2])

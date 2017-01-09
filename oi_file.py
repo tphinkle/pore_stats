@@ -26,6 +26,7 @@ import csv
 import sys
 import copy
 import json
+import cine
 
 """
 Constants
@@ -203,15 +204,16 @@ def get_frame_bvi(filepath, frame_num, dim0, dim1):
     """
     filehandle = open(filepath, 'rb')
     filehandle.seek(BVI_HEADER_BYTES+4*dim0*dim1*frame_num)
-    print dim0*dim1
+    #print dim0*dim1
     data = filehandle.read(4*dim0*dim1)
 
     data = np.fromstring(data, dtype = 'float32').reshape((dim0, dim1))
-    print data.shape
+    #print data.shape
 
 
 
     return data
+
 
 def open_video_connection(file_name):
     """
@@ -259,9 +261,32 @@ def preprocess_video(vid, output_file_name, sigma, alpha, beta = 'avg'):
 
     return
 
+def cine_to_mp4(cine_file_path, mp4_file_path):
+    cin = cine.Cine(cine_file_path)
+    writer = imageio.get_writer(mp4_file_path, fps = 30)
+    print 'total_frames:', cin._total_frames
+    for frame in xrange(cin._total_frames-1):
+        try:
+            print frame
+            writer.append_data(cin.get_frame(frame, average = True))
+        except:
+            break
+
+    writer.close()
+
+    return
 
 
 
-def change_frame_contrast(frame, alpha, beta):
-    frame = frame*alpha + beta
+
+def change_frame_contrast(frame, alpha, beta = 'norm'):
+    if beta == 'norm':
+        frame = frame*alpha
+        frame = frame + (0.5-np.mean(frame))
+    else:
+        frame = frame*alpha + beta
+    frame[frame > 1] = 1
+    frame[frame < 0] = 0
+
+
     return frame

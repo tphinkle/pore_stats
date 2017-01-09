@@ -28,6 +28,7 @@ import oi_file
 import os
 import copy
 import time
+import cv2
 
 """
 Constants
@@ -326,7 +327,7 @@ def preprocess_video(vid, output_file_name, sigma, alpha, beta = 'avg'):
 
 
 
-
+"""
 def change_frame_contrast(frame, alpha, beta):
     frame = frame*alpha + beta
     return frame
@@ -339,7 +340,7 @@ def preprocess_frame(frame, sigma, alpha, beta):
     frame = frame*alpha + beta
 
     return frame
-
+"""
 def plot_frame_number(vid, tf):
     """
     * Description: Plots the tf'th frame from video source vid
@@ -413,7 +414,7 @@ def find_clusters_percentage_based(frame, template_frame, threshold_difference =
 
     negative_frame = abs(frame - template_frame)
 
-    threshold_indices = np.where(abs(frame-template_frame) > threshold_difference)
+    threshold_indices = np.where(negative_frame > threshold_difference)
     threshold_indices = zip(threshold_indices[0], threshold_indices[1])
 
 
@@ -424,7 +425,7 @@ def find_clusters_percentage_based(frame, template_frame, threshold_difference =
     for coord in threshold_indices:
         i = coord[0]
         j = coord[1]
-        if pixel_check_array[i,j]==1:
+        if pixel_check_array[i,j] == 1:
             cluster_pixels, pixel_check_array=add_pixel_to_cluster\
             (negative_frame, pixel_check_array, i, j, threshold_difference)
 
@@ -695,7 +696,7 @@ def connect_loose_events(events_, tf_sep_threshold = 5, dist_threshold = 20):
 
 def find_events_vid(file_name, threshold_difference = 30, cluster_threshold = 20,
                 tf_start = -1, tf_stop = -1, template_frame = None,
-                sigma = None, alpha = None, beta = None):
+                sigma = None, alpha = None, beta = None, blur = True):
     """
     * Description: Finds all events within optical imaging data. An event
       is defined as the entrance and exit of a particle (represented as a
@@ -724,7 +725,9 @@ def find_events_vid(file_name, threshold_difference = 30, cluster_threshold = 20
     # Define template frame
     if template_frame == None:
         template_frame = get_frame(vid, tf_start)
-    template_frame = change_frame_contrast(template_frame, alpha, beta)
+    template_frame = change_frame_contrast(template_frame, alpha)
+    if blur == True:
+        frame = cv2.GaussianBlur(frame, (5,5), 0)
 
     active_events=[]
     inactive_events=[]
@@ -733,7 +736,10 @@ def find_events_vid(file_name, threshold_difference = 30, cluster_threshold = 20
     for tf in xrange(tf_start+1, tf_stop):
 
         frame = get_frame(vid, tf)
-        frame = change_frame_contrast(frame, alpha, beta)
+        frame = change_frame_contrast(frame, alpha)
+        if blur == True:
+            frame = cv2.GaussianBlur(frame, (5,5), 0)
+
 
         clusters = find_clusters_percentage_based(
                                    frame, template_frame,
@@ -787,8 +793,8 @@ def find_events_bvi(filepath, threshold_difference = .0375, cluster_threshold = 
 
 
 
-    dim0 = 256#128
-    dim1 = 512#256
+    dim0 = 128#128
+    dim1 = 256#256
 
     bytes_per_frame = 4*dim0*dim1
 
@@ -819,7 +825,7 @@ def find_events_bvi(filepath, threshold_difference = .0375, cluster_threshold = 
 
         frame = data[tf-tf_start,:,:]
         if tf == tf_start + 1:
-            print frame
+            print frame, frame.shape
 
 
 
@@ -835,25 +841,102 @@ def find_events_bvi(filepath, threshold_difference = .0375, cluster_threshold = 
                               clusters]
 
         if tf % 100 == 0:
-            print tf
-            #print 'tf: ', tf, '/', tf_stop, '\tactive:', len(active_events), '\tinactive:', len(inactive_events)
-        new_events = [OpticalEvent([detection]) for detection in detections]
-        #active_events, inactive_events = match_events_to_detections(
-                                             #active_events, inactive_events,
-                                             #detections, tf)
+            print 'tf: ', tf, '/', tf_stop, '\tclusters:', len(clusters), '\tactive:', len(active_events), '\tinactive:', len(inactive_events)
+        #new_events = [OpticalEvent([detection]) for detection in detections]
+        active_events, inactive_events = match_events_to_detections(
+                                             active_events, inactive_events,
+                                             detections, tf)
 
-        events = connect_loose_events(events + new_events)
+        #events = connect_loose_events(events + new_events)
 
 
 
     # Append all events that are still active by last frame to inactive_events
     # list
-    #for active_event in active_events:
-        #inactive_events.append(active_event)
+    for active_event in active_events:
+        inactive_events.append(active_event)
 
 
-    #return inactive_events
-    return events
+    return inactive_events
+    #return events
+
+
+
+def find_events_cine(cine, tf = -1, threshold_difference = .0375, cluster_threshold = 20, template_frame = None, alpha = 1, blur = True):
+    """
+    * Description: Finds all events within optical imaging data. An event
+      is defined as the entrance and exit of a particle (represented as a
+      cluster of pixels) from the 'stage'.
+    * Return: A list of OpticalEvent ('optical_events': List [] of OpticalEvent)
+    * Arguments:
+        - file_name: The file_name of .mp4 file
+        - threshold_difference (optional): The difference in pixel brightness
+          for pixel to register as belonging to a particle
+        - cluster_threshold (optional): Minimum pixel area for cluster to be
+          considered
+        - tf_start (optional): Frame index at which to begin search (will start
+          at first frame if left default)
+        - tf_stop (optional): Frame index at which to end search (will stop at
+          last frame if left default)
+    """
+
+
+    # Get total frame count
+    if tf == -1:
+        tf = cine._total_frames
+
+    # Define template frame
+    if template_frame == None:
+        template_frame = cine.get_frame(0)
+
+
+    template_frame = oi_file.change_frame_contrast(template_frame, alpha = alpha)
+    if blur == True:
+        template_frame = cv2.GaussianBlur(template_frame, (5,5), 0)
+
+    active_events=[]
+    inactive_events=[]
+
+
+    events = []
+    # Search frames for clusters
+    for t in xrange(1, tf):
+        frame = cine.get_frame(t)
+        frame = oi_file.change_frame_contrast(frame, alpha = alpha)
+        if blur == True:
+            frame = cv2.GaussianBlur(frame, (5,5), 0)
+
+        try:
+            clusters = find_clusters_percentage_based(
+                                   frame, template_frame,
+                                   threshold_difference = threshold_difference,
+                                   cluster_threshold = cluster_threshold)
+
+        except:
+            print 'recursion overflow, t = ', t
+            continue
+
+        detections = [OpticalDetection(t, cluster) for cluster in
+                              clusters]
+
+        if t % 1000 == 0:
+            print 't: ', t, '/', tf, '\tclusters:', len(clusters), '\tactive:', len(active_events), '\tinactive:', len(inactive_events)
+        #new_events = [OpticalEvent([detection]) for detection in detections]
+        active_events, inactive_events = match_events_to_detections(
+                                             active_events, inactive_events,
+                                             detections, t)
+
+        #events = connect_loose_events(events + new_events)
+
+
+
+    # Append all events that are still active by last frame to inactive_events
+    # list
+    for active_event in active_events:
+        inactive_events.append(active_event)
+
+
+    return inactive_events
 
 
 

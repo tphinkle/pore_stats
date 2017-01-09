@@ -154,6 +154,53 @@ class RPEventManager(object):
 
         return self._events[new_targeted_event_id]
 
+    def get_previous_targeted_unselected_event(self):
+        targeted_event_id = self._targeted_event._id
+        new_targeted_event_id = None
+
+        event_found = False
+        i = (targeted_event_id - 1)%len(self._events)
+
+        selected_event_ids = [event._id for event in self._selected_events]
+
+        if len(selected_event_ids) == len(self._events):
+            # All events are selected; don't move to next event
+            return self._targeted_event
+
+        while event_found == False:
+            if i in selected_event_ids:
+                i = (i - 1)%len(self._events)
+            else:
+                event_found = True
+                targeted_event = self._events[i]
+
+        return targeted_event
+
+    def get_next_targeted_unselected_event(self):
+        targeted_event_id = self._targeted_event._id
+        new_targeted_event_id = None
+
+        event_found = False
+        i = (targeted_event_id + 1)%len(self._events)
+
+        selected_event_ids = [event._id for event in self._selected_events]
+
+        if len(selected_event_ids) == len(self._events):
+            # All events are selected; don't move to next event
+            return self._targeted_event
+
+        while event_found == False:
+            if i in selected_event_ids:
+                i = (i+1)%len(self._events)
+            else:
+                event_found = True
+                targeted_event = self._events[i]
+
+        return targeted_event
+
+
+
+
     def toggle_selected(self, event):
         event_id = event._id
         if self.is_selected(event) == True:

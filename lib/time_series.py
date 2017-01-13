@@ -115,6 +115,15 @@ class TimeSeries(QtCore.QObject):
 
 
     def add_decimated_data_tier(self, data, tier):
+        """
+        * Description: Adds the data array to the correct position in
+        decimated_data_list; also updates the readiness of the time_series, e.g., if it is
+        ready to display or to be calculated on.
+        * Return:
+        * Arguments:
+            - data: The decimated data array
+            - tier: The decimated data tier, e.g., 0, 1, ...
+        """
         self._decimated_data_list[tier]=data
 
         # Data is ready to analyze if the lowest decimation tier has been loaded.
@@ -152,8 +161,6 @@ class TimeSeries(QtCore.QObject):
             - t_i: Starting index.
             - t_f: Ending index.
         """
-
-
 
         # Get the number of data points in the undecimated data that is requested.
         if t_i < self._decimated_data_list[0][0,0]:

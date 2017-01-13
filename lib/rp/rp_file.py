@@ -1,3 +1,9 @@
+"""
+- Contains all functions related to opening resistive pulse files
+- Supported formats: .atf, .bts, .abf*
+"""
+
+
 # Imports
 
 # Standard library

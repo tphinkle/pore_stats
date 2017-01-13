@@ -18,6 +18,7 @@ RESISTIVE PULSE
         - get_maxima_minima()
 
 """
+
 # Imports
 import sys
 sys.path.append('./qt_app/')
@@ -40,9 +41,6 @@ from scipy.ndimage.filters import gaussian_filter
 from scipy.signal import butter, lfilter
 
 
-# Constants
-
-import numpy as np
 from copy import copy
 
 class ResistivePulseEvent:

@@ -14,17 +14,23 @@ binary format in the future.
 Imports
 """
 
-import numpy as np
-import imageio
-import matplotlib.pyplot as plt
-from array import array
-import optical_imaging as oi
-import struct
-import csv
+# Standard library
 import sys
+import csv
+import struct
 import copy
 import json
-import cine
+from array import array
+
+# pore_stats specific
+import optical_imaging as oi
+
+# Scipy
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+
 
 
 

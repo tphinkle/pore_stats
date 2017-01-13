@@ -20,8 +20,11 @@ RESISTIVE PULSE
 """
 
 # Imports
+
+# Standard library
 import sys
 sys.path.append('./qt_app/')
+import copy
 
 import json
 import csv
@@ -29,21 +32,26 @@ from array import array
 import struct
 from itertools import islice
 
-import numpy as np
 
-import matplotlib.pyplot as plt
-
+# Program specific
 import time_series as ts
 import rp_file
 
+# Scipy
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy.ndimage.filters
+import scipy.signal
 
-from scipy.ndimage.filters import gaussian_filter
-from scipy.signal import butter, lfilter
 
 
-from copy import copy
 
 class ResistivePulseEvent:
+    """
+    A resistive pulse event. Contains the time and current values for every data point
+    in the event, as well as additional information about the event such as its
+    minima and maxima locations, amplitude, duration, etc.
+    """
 
     def __init__(self, data, baseline):
         # Declare member variables
@@ -69,6 +77,14 @@ class ResistivePulseEvent:
 
 
     def set_extrema(self, maxima, minima):
+        """
+        * Description:
+            - Sets the event's maxima, minima, and extrema (combined list of the two)
+        * Return:
+        * Arguments:
+            - maxima: list [] of time indices of the positions of the maxima
+            - minima: list [] of time indices of the positions of the maxima
+        """
 
         self._extrema=maxima[:] + minima[:]
         self._extrema.sort()
@@ -79,38 +95,15 @@ class ResistivePulseEvent:
 
 
 
-def open_event_file(file_path):
-    events = []
 
-    f = open(file_path, 'r')
-    reader = csv.reader(f, delimiter = '\t')
-    row = 5
-    try:
-        while row:
-            row = reader.next()
-            if row[0] == 'event#':
-                baseline = []
-                baseline.append(float(row[5]))
-                baseline.append(float(row[6]))
-                baseline.append(float(row[7]))
-                baseline.append(float(row[8]))
-                length = int(row[3])
-                data = np.empty((length, 2), dtype = float)
-                for i in xrange(length):
-                    row = reader.next()
-                    data[i,0] = float(row[0])
-                    data[i,1] = float(row[1])
-                events.append(ResistivePulseEvent(data, baseline))
-    except:
-        pass
-    return events
 
 def open_event_file_json(file_path):
     """
-    * Description: Loads resistive pulse events saved in a .json format
+    * Description: Loads resistive pulse events saved in a .json format.
     * Return:
+        - events: list[] of ResistivePulseEvent
     * Arguments:
-        -
+        - file_path: The location of the file to load.
     """
     events = []
 
@@ -123,18 +116,6 @@ def open_event_file_json(file_path):
 
     return events
 
-
-def get_full_baseline(data, baseline_avg_length, trigger_sigma_threshold):
-    baseline = np.empty((0,4))
-    start = 0
-    stop = baseline_avg_length
-    while stop < data.shape[0]:
-        baseline = np.vstack((baseline, get_baseline(data, start,\
-                              baseline_avg_length, trigger_sigma_threshold)))
-        start+=baseline_avg_length
-        stop+=baseline_avg_length
-
-    return baseline
 
 
 def get_baseline(data, start, baseline_avg_length, trigger_sigma_threshold):
@@ -294,6 +275,68 @@ def filter_events_length(events, length):
     filtered_events = [event for event in events if event._data.shape[0] >= length]
     return filtered_events
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""""""""""""""""""""""""""""""""
+Obsolete functions
+"""""""""""""""""""""""""""""""""
+"""
+def get_full_baseline(data, baseline_avg_length, trigger_sigma_threshold):
+
+    * Description:
+    * Return:
+    * Arguments:
+        -
+
+    baseline = np.empty((0,4))
+    start = 0
+    stop = baseline_avg_length
+    while stop < data.shape[0]:
+        baseline = np.vstack((baseline, get_baseline(data, start,\
+                              baseline_avg_length, trigger_sigma_threshold)))
+        start+=baseline_avg_length
+        stop+=baseline_avg_length
+
+    return baseline
+"""
+"""
+def open_event_file(file_path):
+    events = []
+
+    f = open(file_path, 'r')
+    reader = csv.reader(f, delimiter = '\t')
+    row = 5
+    try:
+        while row:
+            row = reader.next()
+            if row[0] == 'event#':
+                baseline = []
+                baseline.append(float(row[5]))
+                baseline.append(float(row[6]))
+                baseline.append(float(row[7]))
+                baseline.append(float(row[8]))
+                length = int(row[3])
+                data = np.empty((length, 2), dtype = float)
+                for i in xrange(length):
+                    row = reader.next()
+                    data[i,0] = float(row[0])
+                    data[i,1] = float(row[1])
+                events.append(ResistivePulseEvent(data, baseline))
+    except:
+        pass
+    return events
+    """
 
 
     """

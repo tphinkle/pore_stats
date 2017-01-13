@@ -39,6 +39,25 @@ class RPFile(object):
 
 
 
+def open_event_file_json(file_path):
+    """
+    * Description: Loads resistive pulse events saved in a .json format.
+    * Return:
+        - events: list[] of ResistivePulseEvent
+    * Arguments:
+        - file_path: The location of the file to load.
+    """
+    events = []
+
+    with open(file_path, 'r') as fh:
+        json_reader = json.load(fh)
+        for event in json_reader['events']:
+            baseline = np.array(event['baseline'])
+            data = np.array(event['data'])
+            events.append(ResistivePulseEvent(data, baseline))
+
+    return events
+
 def get_file_type(file_path):
     """
     * Description: Get total number of rows in file
@@ -96,13 +115,17 @@ def get_file_length(file_path):
         return 0
 
 def get_file_sampling_frequency(file_path):
+    """
+    * Description:
+    * Return:
+    * Arguments:
+        -
+    """
 
     with open(file_path, 'rb') as f:
         first_bytes = f.read(24)
         t0=struct.unpack('d', first_bytes[0:8])[0]
         t1=struct.unpack('d', first_bytes[16:24])[0]
-        print 't1 = ', t1
-        print 't0 = ', t0
         sampling_frequency = int(1./(t1-t0))
 
     return sampling_frequency

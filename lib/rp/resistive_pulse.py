@@ -23,7 +23,7 @@ RESISTIVE PULSE
 
 # Standard library
 import sys
-sys.path.append('./qt_app/')
+sys.path.append('../lib')
 import copy
 
 import json
@@ -97,24 +97,7 @@ class ResistivePulseEvent:
 
 
 
-def open_event_file_json(file_path):
-    """
-    * Description: Loads resistive pulse events saved in a .json format.
-    * Return:
-        - events: list[] of ResistivePulseEvent
-    * Arguments:
-        - file_path: The location of the file to load.
-    """
-    events = []
 
-    with open(file_path, 'r') as fh:
-        json_reader = json.load(fh)
-        for event in json_reader['events']:
-            baseline = np.array(event['baseline'])
-            data = np.array(event['data'])
-            events.append(ResistivePulseEvent(data, baseline))
-
-    return events
 
 
 
@@ -144,15 +127,6 @@ def get_baseline(data, start, baseline_avg_length, trigger_sigma_threshold):
 
     return baseline
 
-def get_baseline_1d(data, start, baseline_avg_length, trigger_sigma_threshold):
-    stop = start + baseline_avg_length
-    if start < 0:
-        start = 0
-    baseline_avg = 1.*sum(data[start:stop])/(stop-start)
-    baseline_sigma = sum([(pt-baseline_avg)**2. for pt in data[start:stop]])**.5/(start-stop)
-    trigger_threshold = trigger_sigma_threshold*baseline_sigma
-    baseline = [start, baseline_avg, baseline_avg - trigger_threshold, baseline_avg + trigger_threshold]
-    return baseline
 
 
 
@@ -160,6 +134,14 @@ def get_baseline_1d(data, start, baseline_avg_length, trigger_sigma_threshold):
 
 
 def get_sampling_frequency(data):
+    """
+    * Description:
+        - Returns the sampling frequency from data.
+    * Return:
+        - Returns the sampling frequency.
+    * Arguments:
+        - data: numpy array of data, with first dimension (column) containing time
+    """
     return int(1./(data[1,0]-data[0,0]))
 
 
@@ -272,6 +254,17 @@ def get_maxima_minima(data, sigma=0, refine_length=0, num_maxima = 0, num_minima
 
 
 def filter_events_length(events, length):
+    """
+    * Description:
+        - Takes in a list of ResistivePulseEvent and returns a new filtered list
+        - Filters events based on their length/duration
+    * Return:
+        - filtered_events: List [] of ResistivePulseEvent that has been filtered
+    * Arguments:
+        - events: List [] of ResistivePulseEvent to be filtered
+        - length: Threshold value for the number of data points; events with < length
+        data points are filtered out.
+    """
     filtered_events = [event for event in events if event._data.shape[0] >= length]
     return filtered_events
 
@@ -292,6 +285,17 @@ def filter_events_length(events, length):
 Obsolete functions
 """""""""""""""""""""""""""""""""
 """
+def get_baseline_1d(data, start, baseline_avg_length, trigger_sigma_threshold):
+    stop = start + baseline_avg_length
+    if start < 0:
+        start = 0
+    baseline_avg = 1.*sum(data[start:stop])/(stop-start)
+    baseline_sigma = sum([(pt-baseline_avg)**2. for pt in data[start:stop]])**.5/(start-stop)
+    trigger_threshold = trigger_sigma_threshold*baseline_sigma
+    baseline = [start, baseline_avg, baseline_avg - trigger_threshold, baseline_avg + trigger_threshold]
+    return baseline
+
+
 def get_full_baseline(data, baseline_avg_length, trigger_sigma_threshold):
 
     * Description:
@@ -336,15 +340,11 @@ def open_event_file(file_path):
     except:
         pass
     return events
-    """
 
-
-    """
     def find_events_data(search_data, raw_data = None, start = -1, stop = -1, baseline_avg_length = 500,
                         trigger_sigma_threshold = 6, max_search_length = 5000,
                         go_past_length = 0):
-    """
-    """
+
     * Description: Finds events within a full resistive pulse file
       (.raw file only)
     * Return: List of resistive pulse Events
@@ -360,8 +360,7 @@ def open_event_file(file_path):
           triggered
         - max_search_length (optional): Max number of data points
           searched before abandoning search for end of event
-    """
-    """
+
     # Search parameters
     segment_length = 100000000000
 
@@ -521,14 +520,11 @@ def open_event_file(file_path):
     print 'found', event_indices.shape[0], 'events!'
     return events
 
-    """
 
-    """
     def find_events(file_path, start = -1, stop = -1, baseline_avg_length = 500,
                         trigger_sigma_threshold = 6, max_search_length = 5000,
                         go_past_length = 0, f_cutoff=-1):
-    """
-    """
+
     * Description: Finds events within a full resistive pulse file
       (.raw file only)
     * Return: List of resistive pulse Events
@@ -544,8 +540,7 @@ def open_event_file(file_path):
           triggered
         - max_search_length (optional): Max number of data points
           searched before abandoning search for end of event
-    """
-    """
+
         # Search parameters
         segment_length = 100000000000
 
@@ -713,4 +708,4 @@ def open_event_file(file_path):
 
         print 'found', len(events), 'events!'
         return events
-    """
+"""

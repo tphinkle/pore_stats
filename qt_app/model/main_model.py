@@ -1,11 +1,18 @@
+# Imports
+
+# Standard library
 import sys
 
-PORE_STATS_DIR = '/home/preston/Desktop/Science/Research/pore_stats/'
-
-sys.path.append(PORE_STATS_DIR)
-sys.path.append('/home/preston/Desktop/Science/Research/pore_stats/qt_app/model/')
+# Program specific
+sys.path.append('/home/preston/Desktop/Science/Research/pore_stats/lib/rp/')
 import resistive_pulse as rp
+
+
+sys.path.append('/home/preston/Desktop/Science/Research/pore_stats/qt_app/model/')
 import rp_model
+
+
+
 
 
 

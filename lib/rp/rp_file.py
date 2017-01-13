@@ -1,12 +1,19 @@
+# Imports
+
+# Standard library
 import csv
 from array import array
 import struct
 from itertools import islice
 import copy
-import numpy as np
-
 import os.path
 
+# Scipy
+import numpy as np
+
+
+
+# Constants
 ATF_HEADER_LENGTH_GAP_FREE = 10
 ATF_HEADER_LENGTH_EPISODIC_STIMULATION = 11
 
@@ -245,8 +252,6 @@ def atf_to_bts(file_path, current_column = 1, byte_type = 'd'):
         num_voltages = (len(row)-1)/2 # Subtract time, divide by two for current/voltage
 
 
-
-        print 'num_voltages = ', num_voltages
         # Create the matrix
         # Create empty list to hold all
         data=np.empty((file_length, num_voltages+1)) # Add time data

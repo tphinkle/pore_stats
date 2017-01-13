@@ -1,9 +1,23 @@
+# Imports
+
+# Standard library
 import csv
 import copy
-import numpy as np
 import json
 
+# Scipy
+import numpy as np
+
 class RPEventManager(object):
+    """
+    - Class for managing selection and targeting of RPEvents; used primarily by the
+    pore_stats.py GUI program to determine which Event is currently selected, which are
+    accepted/rejected, etc. for cosmetic and interactive purposes.
+    - E.g., if the user wants to target the next event, the program needs to determine
+    which comes next. This class manages those calculations.
+    """
+
+
     def __init__(self):
         self._parameters = []
 
@@ -13,14 +27,20 @@ class RPEventManager(object):
 
 
     def add_events(self, events):
+        """
+        * Description: Appends events to the current list of events
+        * Return:
+        * Arguments:
+            - events: List [] of RPEvents to be added
+        """
+        # Append the events
         for event in events:
             event._id = len(self._events)
             self._events.append(event)
 
         self.select_event(events[0])
 
-        if self._targeted_event == None:
-            self._targeted_event = events[0]
+        self.target_event(events[0])
 
         self.sort_events(self._events)
         self.sort_events(self._selected_events)
@@ -28,6 +48,12 @@ class RPEventManager(object):
         return
 
     def sort_events(self, events):
+        """
+        * Description: Sorts all events by the order in which they appear
+        * Return:
+        * Arguments:
+            - events: List [] of the ResistivePulseEvents to be sorted
+        """
         moves = -1
         while moves != 0:
             moves = 0
@@ -43,6 +69,11 @@ class RPEventManager(object):
 
 
     def clear_events(self):
+        """
+        * Description: Clears all events from the RPEventManager.
+        * Return:
+        * Arguments:
+        """
         self._events = []
         self._selected_events = []
         self._targeted_event = None
@@ -52,10 +83,21 @@ class RPEventManager(object):
         return
 
     def set_targeted_event(self, event):
+        """
+        * Description: Sets an event to the '_targeted_event'.
+        * Return:
+        * Arguments:
+            - event: The ResistivePulseEvent to be targeted.
+        """
         self._targeted_event = event
         return
 
     def increment_targeted_event(self):
+        """
+        * Description: Sets the targeted event to the next event in the file.
+        * Return:
+        * Arguments:
+        """
         try:
             targeted_id = self._targeted_event._id
 
@@ -72,6 +114,11 @@ class RPEventManager(object):
         return
 
     def decrement_targeted_event(self):
+        """
+        * Description: Sets the targeted event to the previous event in the file.
+        * Return:
+        * Arguments:
+        """
         try:
             targeted_id = self._targeted_event._id
             targeted_index = 0
@@ -88,6 +135,12 @@ class RPEventManager(object):
         return
 
     def get_next_targeted_event(self):
+        """
+        * Description:
+        * Return:
+        * Arguments:
+            -
+        """
         try:
             targeted_id = self._targeted_event._id
             targeted_index = 0
@@ -104,6 +157,12 @@ class RPEventManager(object):
         return self._events[targeted_index]
 
     def get_previous_targeted_event(self):
+        """
+        * Description:
+        * Return:
+        * Arguments:
+            -
+        """
         try:
             targeted_id = self._targeted_event._id
             targeted_index = 0
@@ -120,6 +179,12 @@ class RPEventManager(object):
         return self._events[targeted_index]
 
     def get_previous_targeted_selected_event(self):
+        """
+        * Description:
+        * Return:
+        * Arguments:
+            -
+        """
         targeted_event_id = self._targeted_event._id
         new_targeted_event_id = None
         for i, event in enumerate(self._selected_events):
@@ -137,6 +202,12 @@ class RPEventManager(object):
         return self._events[new_targeted_event_id]
 
     def get_next_targeted_selected_event(self):
+        """
+        * Description:
+        * Return:
+        * Arguments:
+            -
+        """
         targeted_event_id = self._targeted_event._id
         new_targeted_event_id = None
         for i, event in enumerate(reversed(self._selected_events)):
@@ -155,6 +226,12 @@ class RPEventManager(object):
         return self._events[new_targeted_event_id]
 
     def get_previous_targeted_unselected_event(self):
+        """
+        * Description:
+        * Return:
+        * Arguments:
+            -
+        """
         targeted_event_id = self._targeted_event._id
         new_targeted_event_id = None
 
@@ -177,6 +254,12 @@ class RPEventManager(object):
         return targeted_event
 
     def get_next_targeted_unselected_event(self):
+        """
+        * Description:
+        * Return:
+        * Arguments:
+            -
+        """
         targeted_event_id = self._targeted_event._id
         new_targeted_event_id = None
 
@@ -202,6 +285,12 @@ class RPEventManager(object):
 
 
     def toggle_selected(self, event):
+        """
+        * Description:
+        * Return:
+        * Arguments:
+            -
+        """
         event_id = event._id
         if self.is_selected(event) == True:
             self._selected_events = [event for event in self._selected_events if event._id != event_id]
@@ -213,6 +302,12 @@ class RPEventManager(object):
         return
 
     def select_event(self, event):
+        """
+        * Description:
+        * Return:
+        * Arguments:
+            -
+        """
         event_id = event._id
         if self.is_selected(event) == False:
             self._selected_events.append(event)
@@ -220,6 +315,12 @@ class RPEventManager(object):
         return
 
     def unselect_event(self, event):
+        """
+        * Description:
+        * Return:
+        * Arguments:
+            -
+        """
         event_id = event._id
         if self.is_selected(event) == True:
             self._selected_events = [event for event in self._selected_events if event._id != event_id]
@@ -227,6 +328,12 @@ class RPEventManager(object):
         return
 
     def is_selected(self, event):
+        """
+        * Description:
+        * Return:
+        * Arguments:
+            -
+        """
         event_id = event._id
         is_selected = False
         if event._id in [event._id for event in self._selected_events]:
@@ -237,36 +344,30 @@ class RPEventManager(object):
         return is_selected
 
     def get_targeted_index(self):
+        """
+        * Description:
+        * Return:
+        * Arguments:
+            -
+        """
         for i, event in enumerate(self._events):
             if self.is_targeted(event):
                 return i
 
     def is_targeted(self, event):
+        """
+        * Description:
+        * Return:
+        * Arguments:
+            -
+        """
         is_targeted = False
         if self._targeted_event._id == event._id:
             is_targeted = True
 
         return is_targeted
 
-    def save_events(self, file_path):
 
-        print 'saving events!'
-
-        f = open(file_path, 'w')
-        writer = csv.writer(f, delimiter = '\t')
-
-        for i, event in enumerate(self._selected_events):
-            header_row = ['event#', i, 'length', event._data.shape[0],\
-                'baseline', event._baseline[0], event._baseline[1], event._baseline[2], event._baseline[3]]
-
-            writer.writerow(header_row)
-
-            for row in event._data:
-                writer.writerow([row[0], row[1]])
-
-        f.close()
-
-        return
 
     def save_events_json(self, file_path):
         """
@@ -324,3 +425,34 @@ class RPEventManager(object):
             dur_amp[i,1] = event._amplitude
 
         return dur_amp
+
+
+
+"""
+
+
+
+
+    def save_events(self, file_path):
+
+        * Description:
+        * Return:
+        * Arguments:
+            -
+
+        f = open(file_path, 'w')
+        writer = csv.writer(f, delimiter = '\t')
+
+        for i, event in enumerate(self._selected_events):
+            header_row = ['event#', i, 'length', event._data.shape[0],\
+                'baseline', event._baseline[0], event._baseline[1], event._baseline[2], event._baseline[3]]
+
+            writer.writerow(header_row)
+
+            for row in event._data:
+                writer.writerow([row[0], row[1]])
+
+        f.close()
+
+        return
+"""

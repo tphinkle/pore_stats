@@ -1,30 +1,45 @@
+# Imports
+
+# Standard library
 import sys
-import PyQt4.QtCore as QtCore
+import copy
+import time
+
+# Scipy
+import numpy as np
+import scipy.signal
+
+# Program specific
+import rp_event_manager
+import event_finder
 import resistive_pulse as rp
 import rp_file
 import time_series as ts
-import time
 import time_series_loader
-import event_finder
-import copy
-import numpy as np
-import scipy.signal
-import rp_event_manager
+
+# Qt
+import PyQt4.QtCore
+
 
 PORE_STATS_DIR = '/home/preston/Desktop/Science/Research/pore_stats/'
 sys.path.append(PORE_STATS_DIR)
 
-class RPModel(QtCore.QObject):
+class RPModel(PyQt4.QtCore.QObject):
+    """
+    - Model for all functionality regarding ResistivePulse in the qt_app.
+    - Keeps track of the data, the resistive pulse events, and etc.
+    """
+
     # Class variables
     display_decimation_threshold = 100000
     decimation_factor = 2
 
     # Signals
-    busy = QtCore.pyqtSignal(bool)
+    busy = PyQt4.QtCore.pyqtSignal(bool)
     #event_added = QtCore.pyqtSignal('PyQt_PyObject')
-    event_added = QtCore.pyqtSignal()
-    targeted_event_changed = QtCore.pyqtSignal('PyQt_PyObject')
-    events_cleared = QtCore.pyqtSignal()
+    event_added = PyQt4.QtCore.pyqtSignal()
+    targeted_event_changed = PyQt4.QtCore.pyqtSignal('PyQt_PyObject')
+    events_cleared = PyQt4.QtCore.pyqtSignal()
 
     def __init__(self, parent_controller):
         super(RPModel, self).__init__()
@@ -48,14 +63,24 @@ class RPModel(QtCore.QObject):
         self._event_manager = rp_event_manager.RPEventManager()
 
     def load_ts(self, ts):
+        """
+        * Description:
+            - Loads a time series by creating a new time_series_loader, the class that
+            manages loading the time series and emits signals when its data are ready
+            - Connects the proper signals for the time_series_loader
+            - Starts the time_series_loader thread
+        * Return: None
+        * Arguments:
+            - ts: The time-series to be loaded.
+        """
         new_ts_loader = time_series_loader.TimeSeriesLoader(ts)
         self._time_series_loaders.append(new_ts_loader)
-        self.connect(new_ts_loader, QtCore.SIGNAL('started()'), self.set_busy)
-        self.connect(new_ts_loader, QtCore.SIGNAL('finished()'), self.set_not_busy)
-        self.connect(new_ts_loader, QtCore.SIGNAL('finished()'),\
+        self.connect(new_ts_loader, PyQt4.QtCore.SIGNAL('started()'), self.set_busy)
+        self.connect(new_ts_loader, PyQt4.QtCore.SIGNAL('finished()'), self.set_not_busy)
+        self.connect(new_ts_loader, PyQt4.QtCore.SIGNAL('finished()'),\
                      lambda: self.remove_ts_loader(new_ts_loader._id))
 
-        self.connect(new_ts_loader, QtCore.SIGNAL('add_tier(PyQt_PyObject, int)'),\
+        self.connect(new_ts_loader, PyQt4.QtCore.SIGNAL('add_tier(PyQt_PyObject, int)'),\
          ts.add_decimated_data_tier)
 
         new_ts_loader.start()
@@ -83,13 +108,13 @@ class RPModel(QtCore.QObject):
 
     def set_busy(self):
         self._busy = True
-        self.emit(QtCore.SIGNAL('busy(bool)'), self._busy)
+        self.emit(PyQt4.QtCore.SIGNAL('busy(bool)'), self._busy)
 
         return
 
     def set_not_busy(self):
         self._busy = False
-        self.emit(QtCore.SIGNAL('busy(bool)'), self._busy)
+        self.emit(PyQt4.QtCore.SIGNAL('busy(bool)'), self._busy)
 
         return
 
@@ -242,8 +267,6 @@ class RPModel(QtCore.QObject):
 
         self._event_manager._parameters = parameters
 
-        #self._event_thread = QtCore.QThread()
-
         if filter == False:
             filtered_data = None
         else:
@@ -253,22 +276,11 @@ class RPModel(QtCore.QObject):
             baseline_avg_length = self._baseline_avg_length, trigger_sigma_threshold = self._trigger_sigma_threshold, \
             max_search_length =  self._max_search_length, filtered_data = filtered_data, go_past_length = 0)
 
-
-        #self._event_finder.moveToThread(self._event_thread)
-
-        #self.connect(self._event_thread, QtCore.SIGNAL('started()'), self.set_busy)
-        #self.connect(self._event_thread, QtCore.SIGNAL('started()'), self._event_finder.find_events)
-
-        # Process all event detections at conclusion of search
-
-        self.connect(self._event_finder, QtCore.SIGNAL('events_found(PyQt_PyObject)'),\
+        self.connect(self._event_finder, PyQt4.QtCore.SIGNAL('events_found(PyQt_PyObject)'),\
                      self._event_manager.add_events)
-        self.connect(self._event_finder, QtCore.SIGNAL('finished()'), self.event_added)
-        self.connect(self._event_finder, QtCore.SIGNAL('finished()'), self.set_not_busy)
+        self.connect(self._event_finder, PyQt4.QtCore.SIGNAL('finished()'), self.event_added)
+        self.connect(self._event_finder, PyQt4.QtCore.SIGNAL('finished()'), self.set_not_busy)
 
         self._event_finder.start()
-
-        #self._event_thread.start()
-
 
         return

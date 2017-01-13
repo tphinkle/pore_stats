@@ -1,14 +1,12 @@
 """
 
-IMAGING
+Optical imaging
 
-* Contains tools for opening, analyzing imaging data from experiments
-
-* Sections:
-    1. Imports
-    2. Constants
-    3. Classes
-    4. Functions
+* Contains tools for opening files related to optical imaging, including video files
+and event files.
+* Currently only uses the .cine format for video files; but will move to a generalized
+binary format in the future.
+* OIEvents are contained in formatted .json files; older plain text files are obsolete.
 """
 
 
@@ -27,6 +25,158 @@ import sys
 import copy
 import json
 import cine
+
+
+
+"""
+Classes
+"""
+
+class Cine():
+    """
+    - Contains member variables and functions used to work with .cine files.
+    - .cine files are a Vision Research proprietary file system for storing grayscale images
+    and meta data in a binary format.
+    - Some info about the file structure can be found at
+      https://wiki.multimedia.cx/index.php/Phantom_Cine
+    """
+
+    def __init__(self, file_path):
+
+        self._file_path = file_path
+
+        self._file_handle = open(file_path, 'rb')
+
+        # Read header
+        self._file_handle.seek(0)
+        header = self._file_handle.read(44)
+
+        # This byte order is specific to the header
+        header = struct.unpack('< 2c 2c 2c 2c I I I I I I I 2I', header[:44])
+
+        self._total_frames = header[9]
+        off_image_offset = header[14]
+
+        # Read bitmap info
+        bitmapinfo = self._file_handle.read(40)
+        bitmapinfo = struct.unpack('< I 2l 2H 2I 2l 2I', bitmapinfo)
+
+        self._image_width = bitmapinfo[1]
+        self._image_height = bitmapinfo[2]
+        self._bytes_per_frame = self._image_width * self._image_height
+
+        # Get first image pointer
+        self._file_handle.seek(off_image_offset)
+        self._first_image_byte = self._file_handle.read(4)
+        self._first_image_byte = struct.unpack('< I', self._first_image_byte)[0]
+
+
+
+    def get_frame(self, t, norm = True, average = False):
+
+        """
+        * Description:
+            - Returns a frame from a loaded .cine file.
+            - Contains a convenience function to automatically rescale the intensity
+            values.
+
+        * Return:
+            - Frame
+        * Arguments:
+            - t: The frame index
+            - norm: Normalize the grayscale values (0,255)->(0,1)
+            - average: Set the frame intensity after to 0.5
+        """
+
+
+        # plus 8 bytes
+        # of meta data per frame
+        frame_byte = self._first_image_byte + t*(self._bytes_per_frame + 8)
+        self._file_handle.seek(frame_byte)
+
+        frame = np.fromfile(self._file_handle, dtype = np.dtype('u1'), count = self._bytes_per_frame)
+
+        frame = frame.reshape(self._image_height, self._image_width)
+        frame = frame/255.
+
+        # Convenience function for shifting pixel values to mean
+        # Mean is determined on the boolean state of norm, either .5 or 127.5
+        mean = int(norm)*.5 + int(!norm)*255./2
+        if average == True:
+            frame = frame + (mean-np.mean(frame))
+
+        frame[frame > 1] = 1
+        frame[frame < 0] = 0
+
+        return frame
+
+
+
+"""
+Functions
+"""
+
+
+
+def save_oi_events_json(file_path, oi_events):
+    '''
+    * Description:
+        - Saves OI events to a .json formatted file.
+    * Arguments:
+        - output_filepath: The filepath to save to.
+        - oi_events: A list of OIEvent (optical_imaging.py) objects
+    '''
+
+    with open(file_path, 'w') as fh:
+
+        event_json_list = []
+
+        for i, event in enumerate(oi_events):
+            det_list = []
+            for j, det in enumerate(event._detections):
+                tf = det._tf
+                pixels = det._pixels.tolist()
+                det_list.append({'tf': tf, 'pixels': pixels})
+
+            event_json_list.append({'id': str(i),
+                                    'detections': det_list})
+
+        events = {'events': event_json_list}
+
+        json.dump(events, fh)
+
+
+def load_oi_events_json(file_path):
+    """
+    * Description:
+        - Loads an events .json file.
+    * Return:
+        - List [] of OIEvent
+    * Arguments:
+        - file_path: File location.
+    """
+
+        events = []
+
+        with open(file_path, 'r') as fh:
+            json_reader = json.load(fh)
+            for event in json_reader['events']:
+                dets = []
+                for det in event['detections']:
+                    tf = det['tf']
+                    pixels = np.array(det['pixels'])
+                    dets.append(oi.OpticalDetection(tf, pixels))
+
+                events.append(oi.OpticalEvent(dets))
+
+        return events
+
+
+
+
+"""""""""""""""""""""""""""""""""""""""
+Obsolete
+"""""""""""""""""""""""""""""""""""""""
 
 """
 Constants
@@ -48,13 +198,19 @@ class OIFile(object):
 
 
 
-
-
 """
 Functions
 """
 
 def save_oi_events(output_filepath, oi_events):
+    '''
+    * Description:
+        - Saves OI events to file.
+    * Arguments:
+        - output_filepath: The filepath to save to.
+        - oi_events: A list of OIEvent (optical_imaging.py) objects
+    '''
+
     f = open(output_filepath, 'w')
 
     f.write(output_filepath+'\n')
@@ -67,42 +223,17 @@ def save_oi_events(output_filepath, oi_events):
 
     return
 
-def save_oi_events_json(file_path, oi_events):
-    with open(file_path, 'w') as fh:
 
-        event_json_list = []
-
-        for i, event in enumerate(oi_events):
-            det_list = []
-            for j, det in enumerate(event._detections):
-                tf = det._tf
-                pixels = det._pixels.tolist()
-                det_list.append({'tf': tf, 'pixels': pixels})
-
-            event_json_list.append({'id': str(i),
-                                    'detections': det_list})
-
-        events = {'events': event_json_list}
-
-        json.dump(events, fh)
-
-def load_oi_events_json(file_path):
-        events = []
-
-        with open(file_path, 'r') as fh:
-            json_reader = json.load(fh)
-            for event in json_reader['events']:
-                dets = []
-                for det in event['detections']:
-                    tf = det['tf']
-                    pixels = np.array(det['pixels'])
-                    dets.append(oi.OpticalDetection(tf, pixels))
-
-                events.append(oi.OpticalEvent(dets))
-
-        return events
 
 def load_oi_events(input_filepath):
+    """
+    * Description:
+        - Loads a regular text file containing OIEvents
+    * Return:
+        - List [] of OIEvent
+    * Arguments:
+        - input_filepath: Filepath to be opened.
+    """
     f = open(input_filepath, 'r')
 
     reader = csv.reader(f, delimiter = '\t')
@@ -137,9 +268,14 @@ def load_oi_events(input_filepath):
 
 
 
-
-
 def get_filelength_bvi(filepath):
+    """
+    * Description:
+        - Returns the total number of frames in a .bvi file.
+    * Return: file_length; the number of frames
+    * Arguments:
+        - filepath: File location.
+    """
     with open(filepath, 'rb') as f:
         header_bytes = f.read(12)
 
@@ -150,6 +286,15 @@ def get_filelength_bvi(filepath):
     return file_length
 
 def get_dimensions_bvi(filepath):
+    """
+    * Description:
+        - Gets the image resolution of a .bvi file.
+    * Return:
+        - dim0: # rows
+        - dim1: # cols
+    * Arguments:
+        - filepath: File location.
+    """
     with open(filepath, 'rb') as f:
         header_bytes = f.read(8)
 
@@ -215,6 +360,11 @@ def get_frame_bvi(filepath, frame_num, dim0, dim1):
     return data
 
 
+
+"""
+MP4 FUNCTIONS
+"""
+
 def open_video_connection(file_name):
     """
     * Description: Opens video connection so frame data can be retrieved from
@@ -275,18 +425,3 @@ def cine_to_mp4(cine_file_path, mp4_file_path):
     writer.close()
 
     return
-
-
-
-
-def change_frame_contrast(frame, alpha, beta = 'norm'):
-    if beta == 'norm':
-        frame = frame*alpha
-        frame = frame + (0.5-np.mean(frame))
-    else:
-        frame = frame*alpha + beta
-    frame[frame > 1] = 1
-    frame[frame < 0] = 0
-
-
-    return frame

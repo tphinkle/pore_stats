@@ -26,7 +26,12 @@ ATF_HEADER_LENGTH_EPISODIC_STIMULATION = 11
 BTS_HEADER_BYTES = 4
 BTS_ELEMENT_BYTES = 8
 
+
 class RPFile(object):
+"""
+Class that describes an active resistive pulse data set.
+"""
+
     def __init__(self, file_path = None):
         self._file_path = None
 
@@ -40,6 +45,12 @@ class RPFile(object):
             self.set_file(file_path)
 
     def set_file(self, file_path):
+        """
+        * Description: Initializes the class parameters based off the file at file_path.
+        * Return:
+        * Arguments:
+            - file_path: Location and name of resistive pulse file to be opened.
+        """
         self._file_path = file_path
         self._file_name = self._file_path.split('/')[-1]
         self._directory = self._file_path.split('/')[:-1]
@@ -49,6 +60,7 @@ class RPFile(object):
         self._file_size = get_file_length(self._file_path)
 
         return
+
 
 
 
@@ -142,6 +154,7 @@ def get_file_sampling_frequency(file_path):
         sampling_frequency = int(1./(t1-t0))
 
     return sampling_frequency
+
 
 def np_to_bts(output_file_path, np_data, byte_type = 'd'):
     data_array = array(byte_type, np_data.reshape(-1,1))

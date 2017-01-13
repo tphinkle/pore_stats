@@ -86,6 +86,11 @@ class RPModel(PyQt4.QtCore.QObject):
         new_ts_loader.start()
 
     def load_main_ts(self):
+        """
+        * Description: Initializes the main time series, then calls the load_ts function.
+        * Return:
+        * Arguments:
+        """
 
         self._main_ts.initialize(file_path = self._active_file._file_path,
                                  full_data = None,
@@ -97,6 +102,13 @@ class RPModel(PyQt4.QtCore.QObject):
         return
 
     def save_events(self):
+        """
+        * Description:
+            - Instructs the _event_manager to save the events to the file
+            file_path.
+        * Return:
+        * Arguments:
+        """
         file_path = self._active_file._file_path
         file_path = file_path.split('.')[0]
         file_path = file_path + '_events.json'
@@ -107,18 +119,39 @@ class RPModel(PyQt4.QtCore.QObject):
 
 
     def set_busy(self):
+        """
+        * Description:
+            - Sets internal status to busy.
+            - Informs the controller about change to busy state.
+        * Return:
+        * Arguments:
+        """
         self._busy = True
         self.emit(PyQt4.QtCore.SIGNAL('busy(bool)'), self._busy)
 
         return
 
     def set_not_busy(self):
+        """
+        * Description:
+            - Sets internal status to not busy.
+            - Informs the controller about change to not busy state.
+        * Return:
+        * Arguments:
+        """
         self._busy = False
         self.emit(PyQt4.QtCore.SIGNAL('busy(bool)'), self._busy)
 
         return
 
     def set_active_file(self, file_path):
+        """
+        * Description:
+            - Creates a new rp_file class object with file_path
+        * Return:
+        * Arguments:
+            - file_path: Location of the RP file.
+        """
         self._active_file = rp_file.RPFile(file_path)
         return
 
@@ -126,6 +159,13 @@ class RPModel(PyQt4.QtCore.QObject):
 
 
     def remove_ts_loader(self, id):
+        """
+        * Description:
+            - Removes the ts_loader with id ID from the list of ts_loaders
+        * Return:
+        * Arguments:
+            -
+        """
         self._time_series_loaders = [ts for ts in self._time_series_loaders if ts._id != id]
         return
 

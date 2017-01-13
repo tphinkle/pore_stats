@@ -62,6 +62,8 @@ class TimeSeries(QtCore.QObject):
         * Description:
             - Initializes the time_series with its parameter information, such as file
             location, the complete data, etc.
+            - Initializes either from a full, undecimated data array -- or -- a file_path,
+            in which case the file is opened.
         * Return:
         * Arguments:
             - file_path: File location and name
@@ -82,13 +84,11 @@ class TimeSeries(QtCore.QObject):
         self._max_pts_returned = max_pts_returned
         self._decimation_factor = decimation_factor
 
-        #if file_path != None:
-            #self._data_points = rp_file.get_file_length(file_path)
-            #self._sampling_frequency = rp_file.get_file_sampling_frequency(file_path)
+        if file_path != None:
+            self._data_points = rp_file.get_file_length(file_path)
+            self._sampling_frequency = rp_file.get_file_sampling_frequency(file_path)
 
         if full_data != None:
-            self._data_points = self._full_data.shape[0]
-            self._sampling_frequency = int(1./(self._full_data[1,0] - self._full_data[0,0]))
             self._t0 = full_data[0,0]
             self._full_data = full_data
             self._data_points = self._full_data.shape[0]

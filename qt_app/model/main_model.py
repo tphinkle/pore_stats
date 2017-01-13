@@ -17,6 +17,10 @@ import rp_model
 
 
 class MainModel(object):
+    """
+    Creates new RP Models so that more than one may be open and operated independently at
+    any given time.
+    """
 
     def __init__(self):
         self._main_controller = None

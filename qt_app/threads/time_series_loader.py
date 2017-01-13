@@ -8,6 +8,16 @@ import rp_file
 import math
 
 class TimeSeriesLoader(QtCore.QThread):
+    """
+    - QThread object that loads a time_series.
+    - Starts with a file name and hten loads all of the data from that file into the
+    undecimated list.
+    - After loading the undecimated data, begins to load hte decimated data arrays.
+    - Every time a data array is finished loading (dec. and non-dec.), it emits a signal
+    that sends the data array to its associated TimeSeries class.
+    - This connection is established when the TimeSeriesLoader is created in rp_model.
+    """
+
     loaders = 0
     def __init__(self, time_series):
         super(TimeSeriesLoader, self).__init__()
@@ -34,9 +44,11 @@ class TimeSeriesLoader(QtCore.QThread):
     def run(self):
         """
         * Description:
+            - Triggered when this class' start() function is called
+            (PyQt4.QtCore.QThread.start())
+            - Emits PyQt4.QtCore.QThread.finished() when return is called
         * Return:
         * Arguments:
-            -
         """
 
         if self._full_data == None:

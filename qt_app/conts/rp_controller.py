@@ -13,7 +13,7 @@
 Imports
 """
 import sys
-sys.path.append('/home/preston/Desktop/Science/Research/pore_stats/')
+sys.path.append('/home/prestonh/Desktop/Research/pore_stats/')
 import resistive_pulse as rp
 from rp_model import RPModel
 import rp_predictor
@@ -56,8 +56,8 @@ class RPController(QtCore.QObject):
     KEY_F2 = 16777265
 
     # Temp placement for training data path
-    ML_FILE_PATH = '/home/preston/Desktop/Science/Research/pore_stats/qt_app/ML/event_predictions_train'
-    default_rpfile_directory = '/home/preston/Desktop/Science/Research/cancer_cells/data/'
+    ML_FILE_PATH = '/home/prestonh/Desktop/Research/pore_stats/qt_app/ML/event_predictions_train'
+    default_rpfile_directory = '/home/prestonh/Desktop/Research/cancer_cells/data/'
 
     def __init__(self, main_model, main_view):
         self._main_model = main_model
@@ -116,8 +116,8 @@ class RPController(QtCore.QObject):
 
         rp_model.event_added.connect(lambda:\
             self.plot_all_events(rp_model, rp_view))
-        rp_model.targeted_event_changed.connect(lambda targeted_event:\
-            self.plot_targeted_event(rp_model, rp_view, targeted_event))
+#        rp_model.targeted_event_changed.connect(lambda targeted_event:\
+            #self.plot_targeted_event(rp_model, rp_view, targeted_event))
         rp_model.events_cleared.connect(lambda:\
             self.clear_events(rp_model, rp_view))
 
@@ -208,7 +208,7 @@ class RPController(QtCore.QObject):
         return
 
     def handle_stats_plot_hover(self, rp_model, rp_view):
-        print 'hovering!\n', time.time()
+        #print 'hovering!\n', time.time()
         return
 
     def catch_key_press(self, rp_model, rp_view, key):
@@ -220,9 +220,8 @@ class RPController(QtCore.QObject):
             - key: The integer ID of the key pressed. Integer ID's are matched to idiomatic
               class variables such as 'KEY_RARROW' (the right arrow key).
         """
-        #print 'key_press:', key.key()
         key_press = key.key()
-        print key_press
+
 
 
         if key_press == self.KEY_1:
@@ -816,7 +815,7 @@ class RPController(QtCore.QObject):
         # Tell rp view to plot the event
         for event in events:
             rp_view.plot_new_event(event._data, event._duration, event._amplitude, \
-                                   rp_model._event_manager.is_selected(event))
+                                rp_model._event_manager.is_selected(event))
 
 
         # Select all events
@@ -956,6 +955,7 @@ class RPController(QtCore.QObject):
         rp_model._event_manager.select_event(event)
 
         # Update main plot
+
         event_plot_item = self.get_event_plot_item(rp_model, rp_view, event)
         event_plot_item.setPen(rp_view.pen_2)
 
@@ -1175,7 +1175,7 @@ class RPController(QtCore.QObject):
 
         points = rp_view._stats_plot_item.getData()
 
-        #print points.shape
+
 
         points_qt = [QtCore.QPointF(pt[0], pt[1]) for pt in zip(points[0][:].tolist(), points[1][:].tolist())]
 
@@ -1192,7 +1192,7 @@ class RPController(QtCore.QObject):
 
         points = rp_view._stats_plot_item.getData()
 
-        #print points.shape
+
 
         points_qt = [QtCore.QPointF(pt[0], pt[1]) for pt in zip(points[0][:].tolist(), points[1][:].tolist())]
 

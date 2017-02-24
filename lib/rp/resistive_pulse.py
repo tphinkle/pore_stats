@@ -23,7 +23,7 @@ RESISTIVE PULSE
 
 # Standard library
 import sys
-sys.path.append('../lib')
+sys.path.append('home/prestonh/Desktop/Research/pore_stats/lib')
 import copy
 
 import json
@@ -34,7 +34,7 @@ from itertools import islice
 
 
 # Program specific
-import time_series as ts
+#import time_series as ts
 import rp_file
 
 # Scipy

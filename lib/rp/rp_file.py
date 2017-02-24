@@ -13,11 +13,13 @@ import struct
 from itertools import islice
 import copy
 import os.path
+import json
 
 # Scipy
 import numpy as np
 
-
+# Program specific
+import resistive_pulse
 
 # Constants
 ATF_HEADER_LENGTH_GAP_FREE = 10
@@ -28,10 +30,10 @@ BTS_ELEMENT_BYTES = 8
 
 
 class RPFile(object):
-"""
-Class that describes an active resistive pulse data set.
-"""
 
+    """
+    Class that describes an active resistive pulse data set.
+    """
     def __init__(self, file_path = None):
         self._file_path = None
 
@@ -79,7 +81,7 @@ def open_event_file_json(file_path):
         for event in json_reader['events']:
             baseline = np.array(event['baseline'])
             data = np.array(event['data'])
-            events.append(ResistivePulseEvent(data, baseline))
+            events.append(resistive_pulse.ResistivePulseEvent(data, baseline))
 
     return events
 
@@ -182,7 +184,6 @@ def split_file(file_path, split_factor):
             stop = start + interval
 
             split_data = np.copy(data[start:stop, :])
-            print split_data[:10,:]
             #split_data[:,0] = split_data[:,0] - split_data[0,0]
 
 
@@ -293,7 +294,6 @@ def atf_to_bts(file_path, current_column = 1, byte_type = 'd'):
         voltage_list = [0 for i in range(num_voltages)]
         for i in range(num_voltages):
             voltage_list[i] = voltages[voltages.shape[0]/2,i]
-        print voltage_list
 
         for i in range(num_voltages):
             output_file_path = file_path.split('.')[0]+'V_'+str(voltage_list[i]).replace('.', 'p')+'.bts'

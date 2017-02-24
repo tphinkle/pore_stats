@@ -190,7 +190,6 @@ class RPEventManager(object):
         for i, event in enumerate(self._selected_events):
             if event._id >= targeted_event_id:
                 new_targeted_event_id = self._selected_events[i-1]._id
-                print new_targeted_event_id
                 break
 
         if new_targeted_event_id == None:
@@ -301,6 +300,10 @@ class RPEventManager(object):
 
         return
 
+    def target_event(self, event):
+        event_id = event._id
+        self._targeted_event = event
+
     def select_event(self, event):
         """
         * Description:
@@ -377,7 +380,7 @@ class RPEventManager(object):
             - file_path: Path to save file
         """
 
-        print 'saving events!'
+
 
         with open(file_path, 'w') as fh:
 

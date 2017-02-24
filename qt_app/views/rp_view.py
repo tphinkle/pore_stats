@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/home/preston/Desktop/Science/Research/pore_stats/qt_app/pyqtgraph-0.9.10')
+sys.path.append('/home/prestonh/Desktop/Research/pore_stats/qt_app/pyqtgraph-0.9.10')
 import pyqtgraph as pg
 
 import PyQt4.QtCore as QtCore

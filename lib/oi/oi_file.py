@@ -1,5 +1,4 @@
 """
-
 Optical imaging
 
 * Contains tools for opening files related to optical imaging, including video files
@@ -21,6 +20,7 @@ import struct
 import copy
 import json
 from array import array
+import os
 
 # pore_stats specific
 import optical_imaging as oi
@@ -28,6 +28,8 @@ import optical_imaging as oi
 # Scipy
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation
+
 
 
 
@@ -37,6 +39,48 @@ import matplotlib.pyplot as plt
 """
 Classes
 """
+
+class Raw():
+    """
+    - Contains member variables and functions used to work with raw binary files.
+    - For now, user has to supply the resolution, sampling frequency, and
+    exposure time.
+    """
+
+    def __init__(self, file_path, image_width, image_height,
+                 fps = 0, exp_time = 0):
+        self._file_path = file_path
+        self._file_handle = open(file_path, 'rb')
+        self._image_width = image_width
+        self._image_height = image_height
+        self._bytes_per_frame = self._image_width * self._image_height
+        self._fps = fps
+        self._exp_time = exp_time
+
+        self._total_frames = os.path.getsize(self._file_path)/\
+        (self._image_width*self._image_height)
+
+
+    def get_frame(self, frame, average = False):
+        self._file_handle.seek(frame*self._bytes_per_frame)
+        frame = np.fromfile(self._file_handle, dtype = np.uint8, count = self._bytes_per_frame)
+
+        frame = frame.reshape(self._image_height, self._image_width)
+        frame = frame/255.
+
+        # Convenience function for shifting pixel values to mean
+        # Mean is determined on the boolean state of norm, either .5 or 127.5
+
+        if average == True:
+            mean = int(norm)*.5 + int(not norm)*255./2
+            frame = frame + (mean-np.mean(frame))
+            frame[frame > 1] = 1
+            frame[frame < 0] = 0
+
+
+        return frame
+
+
 
 class Cine():
     """
@@ -107,7 +151,7 @@ class Cine():
 
         # Convenience function for shifting pixel values to mean
         # Mean is determined on the boolean state of norm, either .5 or 127.5
-        mean = int(norm)*.5 + int(!norm)*255./2
+        mean = int(norm)*.5 + int(not norm)*255./2
         if average == True:
             frame = frame + (mean-np.mean(frame))
 
@@ -122,6 +166,32 @@ class Cine():
 Functions
 """
 
+def make_animation(vid, t0, t1):
+
+    template_frame = vid.get_frame(0)
+    dim = template_frame.shape
+
+    # First set up the figure, the axis, and the plot element we want to animate
+    fig, ax = plt.subplots()
+
+
+    plot = ax.imshow(vid.get_frame(t0), cmap = 'gray', origin = 'lower')
+
+    def init():
+        plot.set_data(vid.get_frame(t0))
+        return (plot,)
+
+
+    # animation function. This is called sequentially
+    def animate(i):
+        plot.set_data(vid.get_frame(i))
+        return (plot,)
+
+    # call the animator. blit=True means only re-draw the parts that have changed.
+    #anim = matplotlib.animation.FuncAnimation(fig, animate, np.arange(t0, t1), init_func=init, interval=200, blit=True)
+    anim = matplotlib.animation.FuncAnimation(fig, animate, np.arange(t0, t1), interval=200, blit=False)
+
+    return anim
 
 
 def save_oi_events_json(file_path, oi_events):
@@ -152,7 +222,7 @@ def save_oi_events_json(file_path, oi_events):
         json.dump(events, fh)
 
 
-def load_oi_events_json(file_path):
+def open_event_file_json(file_path):
     """
     * Description:
         - Loads an events .json file.
@@ -162,18 +232,18 @@ def load_oi_events_json(file_path):
         - file_path: File location.
     """
 
-        events = []
+    events = []
 
-        with open(file_path, 'r') as fh:
-            json_reader = json.load(fh)
-            for event in json_reader['events']:
-                dets = []
-                for det in event['detections']:
-                    tf = det['tf']
-                    pixels = np.array(det['pixels'])
-                    dets.append(oi.OpticalDetection(tf, pixels))
+    with open(file_path, 'r') as fh:
+        json_reader = json.load(fh)
+        for event in json_reader['events']:
+            dets = []
+            for det in event['detections']:
+                tf = det['tf']
+                pixels = np.array(det['pixels'])
+                dets.append(oi.OpticalDetection(tf, pixels))
 
-                events.append(oi.OpticalEvent(dets))
+            events.append(oi.OpticalEvent(dets))
 
         return events
 

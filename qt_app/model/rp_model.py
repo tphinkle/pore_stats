@@ -2,6 +2,9 @@
 
 # Standard library
 import sys
+PORE_STATS_DIR = '/home/prestonh/Desktop/Research/pore_stats/qt_app/threads'
+sys.path.append(PORE_STATS_DIR)
+
 import copy
 import time
 
@@ -10,6 +13,7 @@ import numpy as np
 import scipy.signal
 
 # Program specific
+sys.path.append('/home/prestonh/Desktop/Research/pore_stats/lib')
 import rp_event_manager
 import event_finder
 import resistive_pulse as rp
@@ -21,8 +25,7 @@ import time_series_loader
 import PyQt4.QtCore
 
 
-PORE_STATS_DIR = '/home/preston/Desktop/Science/Research/pore_stats/'
-sys.path.append(PORE_STATS_DIR)
+
 
 class RPModel(PyQt4.QtCore.QObject):
     """
@@ -36,7 +39,6 @@ class RPModel(PyQt4.QtCore.QObject):
 
     # Signals
     busy = PyQt4.QtCore.pyqtSignal(bool)
-    #event_added = QtCore.pyqtSignal('PyQt_PyObject')
     event_added = PyQt4.QtCore.pyqtSignal()
     targeted_event_changed = PyQt4.QtCore.pyqtSignal('PyQt_PyObject')
     events_cleared = PyQt4.QtCore.pyqtSignal()
@@ -50,14 +52,11 @@ class RPModel(PyQt4.QtCore.QObject):
 
         self._active_file = None
 
+        # Empty/non-initialized TimeSeries objects
         self._main_ts = ts.TimeSeries(key_parameters = [])
-
         self._baseline_ts = ts.TimeSeries(key_parameters = ['baseline_avg_length'])
-
         self._pos_thresh_ts = ts.TimeSeries(key_parameters = ['baseline_avg_length', 'trigger_sigma_threshold'])
-
         self._neg_thresh_ts = ts.TimeSeries(key_parameters = ['baseline_avg_length', 'trigger_sigma_threshold'])
-
         self._filtered_ts = ts.TimeSeries(key_parameters = ['filter_frequency'])
 
         self._event_manager = rp_event_manager.RPEventManager()
@@ -175,6 +174,18 @@ class RPModel(PyQt4.QtCore.QObject):
 
 
     def load_baseline_ts(self):
+        """
+        * Description:
+            - Loads 3 time series:
+                - pos threshold
+                - average
+                - negative threshold
+            - Checks to make sure that the parameters set in the UI agree with those
+            set in the baseline TimeSeries classes; if not, this means that those options
+            have been changed by the user and they will have to be recalculated.
+        * Return:
+        * Arguments:
+        """
 
         if ((self._baseline_ts._key_parameters['baseline_avg_length'] != self._baseline_avg_length) or
             (self._pos_thresh_ts._key_parameters['trigger_sigma_threshold'] != self._trigger_sigma_threshold)):
@@ -215,6 +226,14 @@ class RPModel(PyQt4.QtCore.QObject):
         return
 
     def load_filtered_ts(self):
+        """
+        * Description:
+            - Loads the filtered TimeSeries.
+            - First checks to see if the loaded filtered TimeSeries parameters differ from
+            those set in the GUI; if they do differ, the TimeSeries will be loaded again.
+        * Return:
+        * Arguments:
+        """
         if self._filtered_ts._key_parameters['filter_frequency'] != self._filter_frequency:
             cutoff = self._filter_frequency
             nyquist = self._main_ts._sampling_frequency/2.
@@ -238,22 +257,59 @@ class RPModel(PyQt4.QtCore.QObject):
         return
 
     def set_baseline_avg_length(self, baseline_avg_length):
+        """
+        * Description: Setter for _baseline_avg_length, teh number of points that are
+        averaged in calculating the baseline.
+        * Return:
+        * Arguments:
+        """
         self._baseline_avg_length = baseline_avg_length
         return
 
     def set_trigger_sigma_threshold(self, trigger_sigma_threshold):
+        """
+        * Description: Setter for _trigger_sigma_threshold, the number of std. dev. factors
+        away from the baseline that that signal must venture before the event start/stop
+        is triggered.
+        * Return:
+        * Arguments:
+        """
         self._trigger_sigma_threshold = trigger_sigma_threshold
         return
 
     def set_max_search_length(self, max_search_length):
+        """
+        * Description: Setter for _max_search_length, the maximum length that the search
+        algorithm will search for the end of an event after the start of an event is
+        detected.
+        * Return:
+        * Arguments:
+        """
         self._max_search_length = max_search_length
 
         return
 
     def set_filter_frequency(self, filter_frequency):
+        """
+        * Description: Setter for _filter_frequency, the frequency at which the data is
+        filtered for the _filtered_ts TimeSeries object.
+        * Return:
+        * Arguments:
+        """
         self._filter_frequency = filter_frequency
 
     def get_main_display_data(self, t_range):
+        """
+        * Description:
+            - Returns the data that will be displayed by calling the _main_ts
+            TimeSeries' return_data() function. The end result is that a decimated array is
+            returned for display purposes.
+        * Return:
+            - main_display_data: The (decimated) array that is to be displayed.
+        * Arguments:
+            - t_range: tuple that contains ti, tf; the start and stop times of the interval
+            that the GUI wishes to display.
+        """
         main_display_data = None
 
         if self._main_ts._display_ready == True:
@@ -263,6 +319,17 @@ class RPModel(PyQt4.QtCore.QObject):
         return main_display_data
 
     def get_baseline_display_data(self, t_range):
+        """
+        * Description:
+            - Returns the baseline data that will be displayed by calling the _baseline_ts
+            TimeSeries' return_data() function. The end result is that a decimated array is
+            returned for display purposes.
+        * Return:
+            - baseline_display_data: The (decimated) array that is to be displayed.
+        * Arguments:
+            - t_range: tuple that contains ti, tf; the start and stop times of the interval
+            that the GUI wishes to display.
+        """
         baseline_display_data = None
 
 
@@ -272,6 +339,17 @@ class RPModel(PyQt4.QtCore.QObject):
         return baseline_display_data
 
     def get_pos_thresh_display_data(self, t_range):
+        """
+        * Description:
+            - Returns the positive threshold data that will be displayed by calling
+            the _pos_thresh_ts TimeSeries' return_data() function. The end result is that
+            a decimated array is returned for display purposes.
+        * Return:
+            - pos_thresh_display_data: The (decimated) array that is to be displayed.
+        * Arguments:
+            - t_range: tuple that contains ti, tf; the start and stop times of the interval
+            that the GUI wishes to display.
+        """
         pos_thresh_display_data = None
 
         if self._pos_thresh_ts._display_ready == True:
@@ -280,6 +358,17 @@ class RPModel(PyQt4.QtCore.QObject):
         return pos_thresh_display_data
 
     def get_neg_thresh_display_data(self, t_range):
+        """
+        * Description:
+            - Returns the negative threshold data that will be displayed by calling
+            the _neg_thresh_ts TimeSeries' return_data() function. The end result is that
+            a decimated array is returned for display purposes.
+        * Return:
+            - neg_thresh_display_data: The (decimated) array that is to be displayed.
+        * Arguments:
+            - t_range: tuple that contains ti, tf; the start and stop times of the interval
+            that the GUI wishes to display.
+        """
         neg_thresh_display_data = None
 
         if self._neg_thresh_ts._display_ready == True:
@@ -288,6 +377,17 @@ class RPModel(PyQt4.QtCore.QObject):
         return neg_thresh_display_data
 
     def get_filtered_display_data(self, t_range):
+        """
+        * Description:
+            - Returns the filtered data that will be displayed by calling the
+            filtered_ts TimeSeries' return_data() function. The end result is that
+            a decimated array is returned for display purposes.
+        * Return:
+            - filtered_display_data: The (decimated) array that is to be displayed.
+        * Arguments:
+            - t_range: tuple that contains ti, tf; the start and stop times of the interval
+            that the GUI wishes to display.
+        """
         filtered_display_data = None
 
         if self._filtered_ts._display_ready == True:
@@ -297,8 +397,18 @@ class RPModel(PyQt4.QtCore.QObject):
 
 
     def find_events(self, ti = -1, tf = -1, filter = False):
+        """
+        * Description:
+            - Function that begins the event search.
+        * Return:
+        * Arguments:
+            -
+        """
 
+        # First clear all the events that have already been found
         self._event_manager.clear_events()
+
+        # Set the correct search parameters for the event_manager
         parameters = []
         parameters.append(('file_path', self._active_file._file_path))
         parameters.append(('baseline_avg_length', str(self._baseline_avg_length)))

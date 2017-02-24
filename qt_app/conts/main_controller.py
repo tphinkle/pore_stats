@@ -16,7 +16,7 @@ Imports
 
 
 import sys
-sys.path.append('/home/preston/Desktop/Science/Research/pore_stats/')
+sys.path.append('/home/prestonh/Desktop/Research/pore_stats/')
 import resistive_pulse as rp
 from rp_model import RPModel
 import rp_controller

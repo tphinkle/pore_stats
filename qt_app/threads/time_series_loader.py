@@ -1,7 +1,7 @@
 import PyQt4.QtCore as QtCore
 import sys
-sys.path.append('/home/preston/Desktop/Science/Research/pore_stats/qt_app/')
-sys.path.append('/home/preston/Desktop/Science/Research/pore_stats/')
+sys.path.append('/home/prestonh/Desktop/Research/pore_stats/')
+sys.path.append('/home/prestonh/Desktop/Research/pore_stats/qt_app/')
 import time_series as ts
 import resistive_pulse as rp
 import rp_file

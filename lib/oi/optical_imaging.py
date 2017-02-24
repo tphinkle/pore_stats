@@ -22,7 +22,7 @@ Imports
 """
 
 import numpy as np
-import imageio
+#import imageio
 import matplotlib.pyplot as plt
 from array import array
 import oi_file
@@ -30,6 +30,7 @@ import os
 import copy
 import time
 import cv2
+import sys
 
 """
 Constants
@@ -287,50 +288,45 @@ class Stage:
     channel_width_small = 25
     channel_depth = 45
 
-    def __init__(self, template_frame, channel_pcorner_0, channel_pcorner_1,
-                 channel_pcorner_2, channel_pcorner_3):
+    def __init__(self, template_frame, c0, c1, c2, c3):
 
         # 0       3
         # 1       2
-        self._template_frame = None
-        self._channel_porigin = None
-        self._channel_pcorner_0 = None
-        self._channel_pcorner_1 = None
-        self._channel_pcorner_2 = None
-        self._channel_pcorner_3 = None
-
-        self._channel_plength = None
-        self._channel_pwidth = None
 
         self._template_frame = template_frame
-        self._channel_porigin = (channel_pcorner_0 + channel_pcorner_1)/2.
-        self._channel_pcorner_0 = channel_pcorner_0
-        self._channel_pcorner_1 = channel_pcorner_1
-        self._channel_pcorner_2 = channel_pcorner_2
-        self._channel_pcorner_3 = channel_pcorner_3
 
+        self._c0 = np.array(c0)
+        self._c1 = np.array(c1)
+        self._c2 = np.array(c2)
+        self._c3 = np.array(c3)
+        self._center = (self._c0+
+                                self._c1+
+                                self._c2+
+                                self._c3)/4.
+        self._norm_x = ((self._c3-self._c0)+(self._c2-self._c1))/2.
+        self._norm_x = (1.*self._norm_x/
+                                np.linalg.norm(self._norm_x)) # Normalize
 
-        axis_0 = self._channel_pcorner_1 - self._channel_pcorner_0
-        axis_1 = self._channel_pcorner_2 - self._channel_pcorner_1
-        axis_2 = self._channel_pcorner_3 - self._channel_pcorner_2
-        axis_3 = self._channel_pcorner_0 - self._channel_pcorner_3
+        self._norm_y = np.array([-self._norm_x[1],
+                                         self._norm_x[0]]) # Orthogonal vector
 
-        self._channel_plength = ((axis_1[0]**2.+axis_1[1]**2.)**.5+
-                                 (axis_3[0]**2.+axis_3[1]**2.)**.5)/2.
+        self._length = (np.linalg.norm(self._c3-self._c0)+
+                               np.linalg.norm(self._c2-self._c1))/2.
+        self._height = (np.linalg.norm(self._c1-self._c0)+
+                               np.linalg.norm(self._c3 - self._c2))/2.
 
-        self._channel_pwidth = ((axis_0[0]**2.+axis_0[1]**2.)**.5+
-                                 (axis_2[0]**2.+axis_2[1]**2.)**.5)/2.
+        self._origin = self._center - self._length/2.*self._norm_x
 
-        self._channel_xaxis = ((self._channel_pcorner_3 +
-                             self._channel_pcorner_2)/2. -
-                            (self._channel_pcorner_0 +
-                             self._channel_pcorner_1)/2.)
+    def pixels_to_meters(self, length):
+        """
+        * Description: Converts a distance to units of meters. Based on the length
+        of the channel in pixels and the known length of the channel in meters.
+        * Return:
+        * Arguments:
+            - length: The length to be converted
+        """
 
-        self._channel_xaxis = (self._channel_xaxis/(self._channel_xaxis[0]**2. +
-                                              self._channel_xaxis[1]**2.)**.5)
-
-        self._channel_yaxis = np.array((-self._channel_xaxis[1],
-                                        self._channel_xaxis[0]))
+        return length*self._length_microns/self._length
 
     def get_channel_coordinates(self, x, y):
         """
@@ -346,12 +342,20 @@ class Stage:
 
         # Coordinates are determined geometrically, e.g. via vector projection onto the
         # channel's axes.
-        px = ((x - self._channel_porigin[0])*self._channel_xaxis[0] +
-              (y - self._channel_porigin[1])*self._channel_xaxis[1])
-        py = ((x - self._channel_porigin[0])*self._channel_yaxis[0] +
-              (y - self._channel_porigin[1])*self._channel_yaxis[1])
+        cx = ((x - self._origin[0])*self._norm_x[0] +
+              (y - self._origin[1])*self._norm_x[1])
+        cy = ((x - self._origin[0])*self._norm_y[0] +
+              (y - self._origin[1])*self._norm_y[1])
 
-        return (px, py)
+        return (cx, cy)
+
+    def in_channel(self, x, y):
+        cx, cy = self.get_channel_coordinates(x,y)
+        if ((cx >= 0 and cx <= self._length)
+         and (cy <= self._height/2.and cy >= -self._height/2)):
+            return True
+        else:
+            return False
 
     def plot_stage(self):
         """
@@ -360,32 +364,47 @@ class Stage:
         * Return:
         * Arguments:
         """
-        fig = plt.figure(figsize = (20, 12))
+        fig, axes = plt.subplots(1,2,figsize = (16, 6))
 
-        plt.scatter(self._channel_porigin[0], self._channel_porigin[1], marker = 'x')
+        plt.sca(axes[0])
+        plt.scatter(self._origin[0], self._origin[1], marker = 'x')
 
-        plt.plot([self._channel_porigin[0], self._channel_porigin[0]+1000*self._channel_xaxis[0]],
-         [self._channel_porigin[1], self._channel_porigin[1]+1000*self._channel_xaxis[1]], lw = 2, ls = '--', c = (1.,0,0))
+        plt.plot([self._c0[0], self._c1[0]],\
+        [self._c0[1], self._c1[1]])
 
-        plt.plot([self._channel_porigin[0], self._channel_porigin[0]+1000*self._channel_yaxis[0]],
-         [self._channel_porigin[1], self._channel_porigin[1]+1000*self._channel_yaxis[1]], lw = 2, ls = '--', c = (1.,0,0))
+        plt.plot([self._c1[0], self._c2[0]],\
+        [self._c1[1], self._c2[1]])
 
-        plt.plot([self._channel_porigin[0], self._channel_porigin[0]-1000*self._channel_xaxis[0]],
-         [self._channel_porigin[1], self._channel_porigin[1]-1000*self._channel_xaxis[1]], lw = 2, ls = '--', c = (1.,0,0))
+        plt.plot([self._c2[0], self._c3[0]],\
+        [self._c2[1], self._c3[1]])
 
-        plt.plot([self._channel_porigin[0], self._channel_porigin[0]-1000*self._channel_yaxis[0]],
-         [self._channel_porigin[1], self._channel_porigin[1]-1000*self._channel_yaxis[1]], lw = 2, ls = '--', c = (1.,0,0))
+        plt.plot([self._c3[0], self._c0[0]],\
+        [self._c3[1], self._c0[1]])
 
-        plt.imshow(self._template_frame, cmap = 'gray', vmin = 0, vmax = 1, origin = 'lower')
-        for c in [self._channel_pcorner_0, self._channel_pcorner_1,
-                   self._channel_pcorner_2, self._channel_pcorner_3]:
+
+        plt.imshow(self._template_frame, cmap = 'gray', origin = 'lower')
+        for c in [self._c0, self._c1,
+                   self._c2, self._c3]:
              plt.scatter(c[0], c[1], marker = 'x')
 
-        plt.text(self._channel_pcorner_0[0], self._channel_pcorner_0[1], str(self._channel_pcorner_0))
+        plt.text(self._origin[0], self._origin[1],
+         str(self._origin), ha = 'left', va = 'center')
 
         plt.xlim(0, self._template_frame.shape[1])
         plt.ylim(0, self._template_frame.shape[0])
+
+        plt.sca(axes[1])
+        plt.imshow(self._template_frame, cmap = 'gray', origin = 'lower')
+        plt.plot([self._origin[0] + 1000*self._norm_x[0], self._origin[0], self._origin[0] + 1000*self._norm_y[0]],
+         [self._origin[1] + 1000*self._norm_x[1], self._origin[1], self._origin[1] + 1000*self._norm_y[1]])
+
+        plt.xlim(0, self._template_frame.shape[1])
+        plt.ylim(0, self._template_frame.shape[0])
+
+
         plt.show()
+
+
 
         return
 
@@ -399,7 +418,7 @@ Functions
 
 
 def find_clusters_percentage_based(frame, template_frame, threshold_difference = .01,
-                  cluster_threshold = 20):
+                  cluster_threshold = 20, diag = False):
     """
     * Description: Calling function to start a recursive search for
       clusters of differing pixels between a frame and template frame.
@@ -413,23 +432,29 @@ def find_clusters_percentage_based(frame, template_frame, threshold_difference =
         - cluster_threshold (optional): Minimum number of pixels in a cluster
           for cluster to be considered
     """
+    sys.setrecursionlimit(10000)
 
     negative_frame = abs(frame - template_frame)
 
     threshold_indices = np.where(negative_frame > threshold_difference)
     threshold_indices = zip(threshold_indices[0], threshold_indices[1])
 
-
+    #print threshold_indices
 
     cluster_list = []
+
+    # 1 means unchecked
+    # 0 means checked
     pixel_check_array=np.ones((negative_frame.shape[0], negative_frame.shape[1]))
 
     for coord in threshold_indices:
         i = coord[0]
         j = coord[1]
+
+        # Check if pixel has already been tested
         if pixel_check_array[i,j] == 1:
             cluster_pixels, pixel_check_array=add_pixel_to_cluster\
-            (negative_frame, pixel_check_array, i, j, threshold_difference)
+            (negative_frame, pixel_check_array, i, j, threshold_difference, diag = diag)
 
             if cluster_pixels.shape[0] > cluster_threshold:
                 cluster_list.append(cluster_pixels)
@@ -440,7 +465,7 @@ def find_clusters_percentage_based(frame, template_frame, threshold_difference =
 def add_pixel_to_cluster(negative_frame, pixel_check_array, i, j,
                          threshold_difference,
                          cluster_pixels=np.empty((0,2), dtype=int),
-                         direction='center'):
+                         direction='center', diag = False):
     """
     * Description: Recursive function that will continuously absorb adjacent
       pixels into a cluster if they exceed the threshold_difference. Called
@@ -475,7 +500,7 @@ def add_pixel_to_cluster(negative_frame, pixel_check_array, i, j,
         if negative_frame[i,j+1]>=threshold_difference:
             cluster_pixels, pixel_check_array=add_pixel_to_cluster(
                 negative_frame, pixel_check_array, i, j+1, threshold_difference,
-                cluster_pixels, 'left')
+                cluster_pixels, 'left', diag = diag)
 
     # Below
     if (direction != 'below' and i != negative_frame.shape[0] - 1
@@ -483,21 +508,56 @@ def add_pixel_to_cluster(negative_frame, pixel_check_array, i, j,
         if negative_frame[i+1,j]>=threshold_difference:
             cluster_pixels, pixel_check_array=add_pixel_to_cluster(
                 negative_frame, pixel_check_array, i+1, j, threshold_difference,
-                cluster_pixels, 'above')
+                cluster_pixels, 'above', diag = diag)
 
     # Left
     if direction != 'left' and j != 0 and pixel_check_array[i,j-1] == 1:
         if negative_frame[i,j-1]>=threshold_difference:
             cluster_pixels, pixel_check_array=add_pixel_to_cluster(
                 negative_frame, pixel_check_array, i, j-1, threshold_difference,
-                cluster_pixels, 'right')
+                cluster_pixels, 'right', diag = diag)
 
     # Above
     if direction != 'above' and i != 0 and pixel_check_array[i-1,j] == 1:
         if negative_frame[i-1,j]>=threshold_difference:
             cluster_pixels, pixel_check_array=add_pixel_to_cluster(
                 negative_frame, pixel_check_array, i-1, j, threshold_difference,
-                cluster_pixels, 'below')
+                cluster_pixels, 'below', diag = diag)
+
+
+    if diag == True:
+        # Above left
+        if direction != 'above left' and i != 0 and j != 0 and pixel_check_array[i-1,j-1] == 1:
+            if negative_frame[i-1,j-1]>=threshold_difference:
+                cluster_pixels, pixel_check_array=add_pixel_to_cluster(
+                    negative_frame, pixel_check_array, i-1, j-1, threshold_difference,
+                    cluster_pixels, 'below right', diag = diag)
+
+
+        # Above right
+        if direction != 'above right' and i != 0 and j != negative_frame.shape[1] - 1 and pixel_check_array[i-1,j+1] == 1:
+            if negative_frame[i-1,j+1]>=threshold_difference:
+                cluster_pixels, pixel_check_array=add_pixel_to_cluster(
+                    negative_frame, pixel_check_array, i-1, j+1, threshold_difference,
+                    cluster_pixels, 'below left', diag = diag)
+
+
+        # Below left
+        if direction != 'below left' and i != negative_frame.shape[0] - 1 and j != 0 and pixel_check_array[i+1,j-1] == 1:
+            if negative_frame[i+1,j-1]>=threshold_difference:
+                cluster_pixels, pixel_check_array=add_pixel_to_cluster(
+                    negative_frame, pixel_check_array, i+1, j-1, threshold_difference,
+                    cluster_pixels, 'above right', diag = diag)
+
+
+        # Below right
+        if direction != 'below right' and i != negative_frame.shape[0] - 1 and j != negative_frame.shape[1] - 1 and pixel_check_array[i+1,j+1] == 1:
+            if negative_frame[i+1,j+1]>=threshold_difference:
+                cluster_pixels, pixel_check_array=add_pixel_to_cluster(
+                    negative_frame, pixel_check_array, i+1, j+1, threshold_difference,
+                    cluster_pixels, 'above left', diag = diag)
+
+
 
     return cluster_pixels, pixel_check_array
 
@@ -529,7 +589,7 @@ def match_events_to_detections(active_events, inactive_events, detections, tf, t
     # This is the maximum Euclidean distance a detection can be from an OpticalEvent
     # for it to be considered potentially 'connected'. Any further than this and the
     # Detection will not be added to the Event.
-    distance_threshold = 20
+    distance_threshold = 600
 
     new_active_events = []
 
@@ -725,7 +785,9 @@ def connect_loose_events(events_, tf_sep_threshold = 5, dist_threshold = 20):
     return events
 
 
-def find_events_cine(cine, tf = -1, threshold_difference = .0375, cluster_threshold = 20, template_frame = None, alpha = 1, blur = True):
+def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
+ cluster_threshold = 20, template_frame = None,
+ alpha = 1, beta = 'avg', blur = False):
     """
     * Description: Finds all events within optical imaging data. An event
       is defined as the entrance and exit of a particle (represented as a
@@ -746,14 +808,14 @@ def find_events_cine(cine, tf = -1, threshold_difference = .0375, cluster_thresh
 
     # Get total frame count
     if tf == -1:
-        tf = cine._total_frames
+        tf = vid._total_frames
 
     # Define template frame
     if template_frame == None:
-        template_frame = cine.get_frame(0)
+        template_frame = vid.get_frame(ti)
 
 
-    template_frame = oi_file.change_frame_contrast(template_frame, alpha = alpha)
+    template_frame = change_frame_contrast(template_frame, alpha = alpha, beta = beta)
     if blur == True:
         template_frame = cv2.GaussianBlur(template_frame, (5,5), 0)
 
@@ -763,13 +825,13 @@ def find_events_cine(cine, tf = -1, threshold_difference = .0375, cluster_thresh
 
     events = []
     # Search frames for clusters
-    for t in xrange(1, tf):
+    for t in xrange(ti, tf):
 
         # Get the frame from the video
-        frame = cine.get_frame(t)
+        frame = vid.get_frame(t)
 
         # Image transformations on the frame
-        frame = oi_file.change_frame_contrast(frame, alpha = alpha)
+        frame = change_frame_contrast(frame, alpha = alpha, beta = beta)
         if blur == True:
             frame = cv2.GaussianBlur(frame, (5,5), 0)
 
@@ -821,7 +883,13 @@ def plot_trajectory(template_frame, event_oi):
 
 
 
-
+def change_frame_contrast(frame, alpha, beta = 0):
+    if beta == 'avg':
+        beta = -(np.mean(frame-.5))
+    new_frame = frame*alpha + beta
+    new_frame[new_frame > 1] = 1
+    new_frame[new_frame < 0] = 0
+    return new_frame
 
 
 
@@ -1111,7 +1179,7 @@ def preprocess_video(vid, output_file_name, sigma, alpha, beta = 'avg'):
 
 
 
-"""
+
 def change_frame_contrast(frame, alpha, beta):
     frame = frame*alpha + beta
     return frame
@@ -1124,11 +1192,11 @@ def preprocess_frame(frame, sigma, alpha, beta):
     frame = frame*alpha + beta
 
     return frame
-"""
 
 
 
-"""
+
+
 def match_events_to_detections(active_events, inactive_events,
                                detections, tf):
 

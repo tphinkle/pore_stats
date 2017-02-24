@@ -4,11 +4,11 @@
 import sys
 
 # Program specific
-sys.path.append('/home/preston/Desktop/Science/Research/pore_stats/lib/rp/')
+sys.path.append('/home/prestonh/Desktop/Research/pore_stats/lib/rp/')
 import resistive_pulse as rp
 
 
-sys.path.append('/home/preston/Desktop/Science/Research/pore_stats/qt_app/model/')
+sys.path.append('/home/prestonh/Desktop/Research/pore_stats/qt_app/model/')
 import rp_model
 
 

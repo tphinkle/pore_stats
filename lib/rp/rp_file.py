@@ -15,6 +15,13 @@ import copy
 import os.path
 import json
 
+import sys
+sys.path.append('/home/prestonh/Desktop/Research/pore_stats/lib/rp/python-neo-master/neo')
+sys.path.append('/home/prestonh/Desktop/Research/pore_stats/lib/rp/python-neo-master/')
+# ABF reader
+import neo.io
+#import
+
 # Scipy
 import numpy as np
 
@@ -98,8 +105,11 @@ def get_file_type(file_path):
         return 'bts'
     elif file_type == 'atf':
         return 'atf'
+    elif file_type == 'abf':
+        return 'abf'
     elif len(file_path.split('.')) == 1:
         return 'raw'
+
 
     else:
         return None
@@ -119,6 +129,16 @@ def get_file_length(file_path):
         with open(file_path) as f:
             file_length = int(os.path.getsize(file_path)/16)
             return file_length
+
+    elif file_type == 'abf':
+        r = neo.io.AxonIO(filename = file_path)
+
+        block = r.read_block(lazy = False, cascade = True)
+        duration = block.segments[0].analogsignals[0].duration.item()
+        sampling_period = block.segments[0].analogsignals[0].sampling_period.item()
+        data_points = int(duration/sampling_period)
+        return data_points
+
 
     elif file_type == 'atf':
         acq_mode = get_atf_acquisition_mode(file_path)
@@ -149,13 +169,22 @@ def get_file_sampling_frequency(file_path):
         -
     """
 
-    with open(file_path, 'rb') as f:
-        first_bytes = f.read(24)
-        t0=struct.unpack('d', first_bytes[0:8])[0]
-        t1=struct.unpack('d', first_bytes[16:24])[0]
-        sampling_frequency = int(1./(t1-t0))
 
-    return sampling_frequency
+    if get_file_type(file_path) == 'bts':
+        with open(file_path, 'rb') as f:
+            first_bytes = f.read(24)
+            t0=struct.unpack('d', first_bytes[0:8])[0]
+            t1=struct.unpack('d', first_bytes[16:24])[0]
+            sampling_frequency = int(1./(t1-t0))
+            return sampling_frequency
+    elif get_file_type(file_path) == 'abf':
+        r = neo.io.AxonIO(filename = file_path)
+
+        block = r.read_block(lazy = False, cascade = True)
+        sampling_period = block.segments[0].analogsignals[0].sampling_period.item()
+        return int(1./sampling_period)
+
+
 
 
 def np_to_bts(output_file_path, np_data, byte_type = 'd'):
@@ -169,7 +198,7 @@ def np_to_bts(output_file_path, np_data, byte_type = 'd'):
     return
 
 def split_file(file_path, split_factor):
-    file_type = get_file_type(file_path)
+    file_type = (file_path)
 
     data = get_data(file_path)
 
@@ -396,6 +425,9 @@ def get_data(file_path, start = -1, stop = -1, file_length = None):
     if file_type == 'atf':
         return get_data_atf(file_path, start, stop)
 
+    elif file_type == 'abf':
+        return get_data_abf(file_path, start, stop)
+
     elif file_type == 'bts':
         return get_data_bts(file_path, start, stop)
 
@@ -406,6 +438,28 @@ def get_data(file_path, start = -1, stop = -1, file_length = None):
     else:
         print 'Did not recognize file type.'
         return None
+
+
+def get_data_abf(file_path, start = -1, stop = -1):
+    """
+    """
+
+    r = neo.io.AxonIO(filename = file_path)
+
+    block = r.read_block(lazy = False, cascade = True)
+    duration = block.segments[0].analogsignals[0].duration.item()
+    sampling_period = block.segments[0].analogsignals[0].sampling_period.item()
+    data_points = int(duration/sampling_period)
+    print data_points
+    data = np.empty((data_points,2))
+    #data = block.segments[0].analogsignals[0].duration*block.segments[0].analogsignals[0].sampling_period
+
+    for i, signal in enumerate(block.segments[0].analogsignals):
+        if i == 0:
+            data[:,0] = signal.times
+            data[:,1] = signal[:,0].flatten()
+
+    return data
 
 
 def get_data_bts(file_path, start = -1, stop = -1):

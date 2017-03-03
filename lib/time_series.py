@@ -81,12 +81,15 @@ class TimeSeries(QtCore.QObject):
         self._file_path = file_path
         self._full_data = full_data
 
+
         self._max_pts_returned = max_pts_returned
         self._decimation_factor = decimation_factor
 
         if file_path != None:
-            self._data_points = rp_file.get_file_length(file_path)
-            self._sampling_frequency = rp_file.get_file_sampling_frequency(file_path)
+            self._data_points = rp_file.get_file_length(str(file_path))
+            self._sampling_frequency = rp_file.get_file_sampling_frequency(str(file_path))
+
+
 
         if full_data != None:
             self._t0 = full_data[0,0]
@@ -162,6 +165,9 @@ class TimeSeries(QtCore.QObject):
             - t_f: Ending index.
         """
 
+
+
+
         # Get the number of data points in the undecimated data that is requested.
         if t_i < self._decimated_data_list[0][0,0]:
             t_i = self._t0
@@ -169,11 +175,17 @@ class TimeSeries(QtCore.QObject):
             t_f = self._decimated_data_list[0][-1,0]
         num_points = int((t_f-t_i)*self._sampling_frequency)
 
+
+
+
+
         # Calculate the correct decimation tier based off of the range requested
         decimation_tier = 0
         while num_points > self._max_pts_returned:
             num_points=num_points/self._decimation_factor
             decimation_tier += 1
+
+
 
         # Check to make sure the requested decimation tier actually exists; if it does
         # not, move up to the next decimation tier.

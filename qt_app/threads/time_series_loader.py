@@ -53,6 +53,7 @@ class TimeSeriesLoader(QtCore.QThread):
 
         if self._full_data == None:
             self._full_data = rp_file.get_data(self._file_path)
+            print self._full_data
             self.emit(QtCore.SIGNAL('add_tier(PyQt_PyObject, int)'), self._full_data, 0)
 
         for i in xrange(self._decimation_tiers-1, 0, -1):

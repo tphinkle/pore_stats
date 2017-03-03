@@ -217,7 +217,8 @@ class OpticalEvent:
         pys = self.get_py()
         tfs = self.get_tf()
 
-        channel_enter_tf = None
+        self._channel_enter_tf = None
+        self._channel_exit_tf = None
 
         # Determine if particle's x-position starts to the left of the channel entrance
         if stage.get_channel_coordinates(pxs[0], pys[0])[0] < 0:
@@ -231,19 +232,19 @@ class OpticalEvent:
                     self._channel_enter_index = i
                     break
 
-        # Calculate channel exit time only if a channel entrance was detected
-        if self._channel_enter_tf != None:
+        # Determine if particle's x-position stops to the right of the channel exit
+        if stage.get_channel_coordinates(pxs[-1], pys[-1])[0] > stage._length:
 
             # For every detection starting with the first, determine if the x-position
             # of the particle crosses over the channel exit; if so, the particle has
             # exited the channel and the information is stored.
-            for i in xrange(len(pxs)):
-                if stage.get_channel_coordinates(pxs[i], pys[i])[0] > stage._channel_plength:
+            for i in reversed(range(len(pxs))):
+                if stage.get_channel_coordinates(pxs[i], pys[i])[0] < stage._length:
                     self._channel_exit_tf = tfs[i]
                     self._channel_exit_index = i
                     break
 
-        return
+        return self._channel_enter_tf, self._channel_exit_tf
 
 
 
@@ -397,7 +398,10 @@ class Stage:
         plt.imshow(self._template_frame, cmap = 'gray', origin = 'lower')
         plt.plot([self._origin[0] + 1000*self._norm_x[0], self._origin[0], self._origin[0] + 1000*self._norm_y[0]],
          [self._origin[1] + 1000*self._norm_x[1], self._origin[1], self._origin[1] + 1000*self._norm_y[1]])
+        plt.plot([self._origin[0] - 1000*self._norm_x[0], self._origin[0], self._origin[0] - 1000*self._norm_y[0]],
+         [self._origin[1] - 1000*self._norm_x[1], self._origin[1], self._origin[1] - 1000*self._norm_y[1]])
 
+        
         plt.xlim(0, self._template_frame.shape[1])
         plt.ylim(0, self._template_frame.shape[0])
 

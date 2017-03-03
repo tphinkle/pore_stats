@@ -71,7 +71,7 @@ class MainView(PyQt4.QtGui.QMainWindow):
 
         self._controls_table = PyQt4.QtGui.QTableWidget()
         self._controls_table.setColumnCount(2)
-        self._controls_table.setRowCount(8)
+        self._controls_table.setRowCount(10)
         self._controls_table.verticalHeader().setVisible(False)
 
 
@@ -101,6 +101,12 @@ class MainView(PyQt4.QtGui.QMainWindow):
 
         self._controls_table.setItem(7, 0, PyQt4.QtGui.QTableWidgetItem("Previous event"))
         self._controls_table.setItem(7, 1, PyQt4.QtGui.QTableWidgetItem("Left arrow"))
+
+        self._controls_table.setItem(8, 0, PyQt4.QtGui.QTableWidgetItem("Next/previous selected event"))
+        self._controls_table.setItem(8, 1, PyQt4.QtGui.QTableWidgetItem("Alt + L/R arrow"))
+
+        self._controls_table.setItem(9, 0, PyQt4.QtGui.QTableWidgetItem("Next/previous unselected event"))
+        self._controls_table.setItem(9, 1, PyQt4.QtGui.QTableWidgetItem("Ctrl + L/R arrow"))
 
         self._controls_table.resizeRowsToContents()
         self._controls_table.resizeColumnsToContents()

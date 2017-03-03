@@ -151,7 +151,7 @@ class RPModel(PyQt4.QtCore.QObject):
         * Arguments:
             - file_path: Location of the RP file.
         """
-        self._active_file = rp_file.RPFile(file_path)
+        self._active_file = rp_file.RPFile(str(file_path))
         return
 
 
@@ -313,6 +313,7 @@ class RPModel(PyQt4.QtCore.QObject):
         main_display_data = None
 
         if self._main_ts._display_ready == True:
+            print 'asdf'
             main_display_data = self._main_ts.return_data(t_range[0], t_range[1])
 
 

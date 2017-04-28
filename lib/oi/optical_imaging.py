@@ -31,6 +31,7 @@ import copy
 import time
 import cv2
 import sys
+import scipy.ndimage
 
 """
 Constants
@@ -62,8 +63,10 @@ class OpticalDetection:
 
             self._tf = int(tf)
             self._pixels = pixels
-            self._px = int((pixels[:,1].max()+pixels[:,1].min())/2)
-            self._py = int((pixels[:,0].max()+pixels[:,0].min())/2)
+            #self._px = int((pixels[:,1].max()+pixels[:,1].min())/2)
+            #self._py = int((pixels[:,0].max()+pixels[:,0].min())/2)
+            self._px = np.mean(pixels[:,1])
+            self._py = np.mean(pixels[:,0])
             self._pvx = 0
             self._pvy = 0
 
@@ -316,7 +319,7 @@ class Stage:
         self._height = (np.linalg.norm(self._c1-self._c0)+
                                np.linalg.norm(self._c3 - self._c2))/2.
 
-        self._origin = self._center - self._length/2.*self._norm_x
+        self._origin = (self._c0 + self._c1)/2.#self._center - self._length/2.*self._norm_x
 
     def pixels_to_meters(self, length):
         """
@@ -327,7 +330,11 @@ class Stage:
             - length: The length to be converted
         """
 
-        return length*self._length_microns/self._length
+        return 1.*length*self._length_microns/self._length
+
+    def meters_to_pixels(self, length):
+
+        return 1.*length*self._length/self._length_microns
 
     def get_channel_coordinates(self, x, y):
         """
@@ -368,7 +375,7 @@ class Stage:
         fig, axes = plt.subplots(1,2,figsize = (16, 6))
 
         plt.sca(axes[0])
-        plt.scatter(self._origin[0], self._origin[1], marker = 'x')
+        plt.scatter(self._origin[0], self._origin[1], marker = 'x', s = 500, c = 'k')
 
         plt.plot([self._c0[0], self._c1[0]],\
         [self._c0[1], self._c1[1]])
@@ -401,7 +408,19 @@ class Stage:
         plt.plot([self._origin[0] - 1000*self._norm_x[0], self._origin[0], self._origin[0] - 1000*self._norm_y[0]],
          [self._origin[1] - 1000*self._norm_x[1], self._origin[1], self._origin[1] - 1000*self._norm_y[1]])
 
-        
+
+        plt.plot([self._c0[0], self._c1[0]],\
+        [self._c0[1], self._c1[1]])
+
+        plt.plot([self._c1[0], self._c2[0]],\
+        [self._c1[1], self._c2[1]])
+
+        plt.plot([self._c2[0], self._c3[0]],\
+        [self._c2[1], self._c3[1]])
+
+        plt.plot([self._c3[0], self._c0[0]],\
+        [self._c3[1], self._c0[1]])
+
         plt.xlim(0, self._template_frame.shape[1])
         plt.ylim(0, self._template_frame.shape[0])
 
@@ -412,12 +431,201 @@ class Stage:
 
         return
 
+    def plot_stage_figure(self):
+        """
+        * Description: Convenience function that plots the stage, and lines and scatter-
+        points denoting the channel's axes and corner coordinates.
+        * Return:
+        * Arguments:
+        """
+        fig = plt.figure(figsize = (8, 6))
+        ax = plt.gca()
+
+        plt.scatter(self._origin[0], self._origin[1], marker = '*', s = 200, c = 'red', lw = 0, zorder = 100)
+
+        scale = 50
+        print self._center
+        print self._norm_x
+        #plt.plot([self._origin[0], self._origin[0] + scale*self._norm_x[0]],\
+         #[self._origin[1], self._origin[1] + scale*self._norm_x[1]], ls = '--')
+
+
+        ax.arrow(self._origin[0], self._origin[1], self._norm_x[0]*scale, self._norm_x[1]*scale,\
+          head_width=5, head_length=5, fc='k', ec='k', lw = 2)
+        ax.arrow(self._origin[0], self._origin[1], self._norm_y[0]*scale, self._norm_y[1]*scale,\
+            head_width=5, head_length=5, fc='k', ec='k', lw = 2)
+
+
+        plt.imshow(self._template_frame, cmap = 'gray', origin = 'lower')
+        for c in [self._c0, self._c1,
+                   self._c2, self._c3]:
+             plt.scatter(c[0], c[1], marker = 'x', c = 'red', s = 25, zorder = 100, lw = 3)
+
+        #plt.text(self._origin[0], self._origin[1],
+#         str(self._origin), ha = 'left', va = 'center')
+
+        plt.grid()
+
+        plt.xlim(90, self._template_frame.shape[1]-85)
+        plt.ylim(75, self._template_frame.shape[0]-95)
+
+
+        plt.show()
+
+
+
+        return
 
 
 """
 Functions
 """
 
+
+# http://stackoverflow.com/questions/13635528/fit-a-ellipse-in-python-given-a-set-of-points-xi-xi-yi
+
+def fitEllipse(x,y):
+    x = x[:,np.newaxis]
+    y = y[:,np.newaxis]
+    D =  np.hstack((x*x, x*y, y*y, x, y, np.ones_like(x)))
+    S = np.dot(D.T,D)
+    C = np.zeros([6,6])
+    C[0,2] = C[2,0] = 2; C[1,1] = -1
+    E, V =  np.linalg.eig(np.dot(np.linalg.inv(S), C))
+    n = np.argmax(np.abs(E))
+    a = V[:,n]
+    return a
+
+def ellipse_center(a):
+    b,c,d,f,g,a = a[1]/2, a[2], a[3]/2, a[4]/2, a[5], a[0]
+    num = b*b-a*c
+    x0=(c*d-b*f)/num
+    y0=(a*f-b*d)/num
+    return np.array([x0,y0])
+
+def ellipse_angle_of_rotation( a ):
+    b,c,d,f,g,a = a[1]/2, a[2], a[3]/2, a[4]/2, a[5], a[0]
+    return 0.5*np.arctan(2*b/(a-c))
+
+def ellipse_axis_length( a ):
+    b,c,d,f,g,a = a[1]/2, a[2], a[3]/2, a[4]/2, a[5], a[0]
+    up = 2*(a*f*f+c*d*d+g*b*b-2*b*d*f-a*c*g)
+    down1=(b*b-a*c)*( (c-a)*np.sqrt(1+4*b*b/((a-c)*(a-c)))-(c+a))
+    down2=(b*b-a*c)*( (a-c)*np.sqrt(1+4*b*b/((a-c)*(a-c)))-(c+a))
+    res1=np.sqrt(up/down1)
+    res2=np.sqrt(up/down2)
+    return np.array([res1, res2])
+
+
+def get_detection_center_ellipse_fit(oi_vid, template_frame, detection, debug = False):
+
+    frame = oi_vid.get_frame(detection._tf)
+
+    left_edge = detection._px-30
+    right_edge = detection._px + 30
+    top_edge = detection._py - 30
+    bottom_edge = detection._py + 30
+
+    if left_edge < 0:
+        left_edge = 0
+    if right_edge >= frame.shape[1]:
+        right_edge = frame.shape[1] - 1
+    if top_edge < 0:
+        top_edge = 0
+    if bottom_edge >= frame.shape[0]:
+        bottom_edge = frame.shape[0] - 1
+
+    ind = [left_edge, right_edge, top_edge, bottom_edge]
+
+    # Frame
+    cropped_frame = frame[ind[2]:ind[3],ind[0]:ind[1]]
+
+    # Template frame
+    cropped_template_frame = template_frame[ind[2]:ind[3],ind[0]:ind[1]]
+
+    # Negative
+    negative_frame = np.abs(cropped_frame - cropped_template_frame)
+
+
+    # Threshold
+    threshold = 0.02
+    threshold_frame = 1*negative_frame
+    threshold_frame[threshold_frame >= threshold] = 1
+    threshold_frame[threshold_frame < threshold] = 0
+
+    # Find clusters in threshold frame
+    clusters_frame = np.zeros(cropped_frame.shape, dtype = np.uint8)
+    clusters = find_clusters_percentage_based(
+        threshold_frame, np.zeros((cropped_frame.shape[0], cropped_frame.shape[1])), cluster_threshold = 10, diag = False)
+
+    # Take pixels from largest cluster
+    cluster = sorted(clusters, key = lambda x: len(x))[-1]
+    for pix in cluster:
+        clusters_frame[pix[0], pix[1]] = 1
+
+
+    # Binary dilate cluster
+    clusters_frame = scipy.ndimage.morphology.binary_dilation(clusters_frame, iterations = 1).astype(np.uint8)
+
+
+    # Remove dangling pixels
+    kernel = np.array([[0, 0, 1],
+                       [0, 1, 1],
+                       [0, 0, 1]])
+    keep_going = True
+    mask = np.zeros(clusters_frame.shape, dtype = np.uint8)
+    mask |= scipy.ndimage.binary_hit_or_miss(clusters_frame, structure1 = kernel)
+    mask |= scipy.ndimage.binary_hit_or_miss(clusters_frame, structure1 = kernel.T)
+    mask |= scipy.ndimage.binary_hit_or_miss(clusters_frame, structure1 = np.fliplr(kernel))
+    mask |= scipy.ndimage.binary_hit_or_miss(clusters_frame, structure1 = np.flipud(kernel))
+
+    clusters_frame = clusters_frame & (1-mask)
+
+
+    # Fill holes
+    clusters_frame = scipy.ndimage.binary_fill_holes(clusters_frame)
+
+
+    # Find edge pixels
+    edge_pixels = scipy.ndimage.morphology.binary_dilation(clusters_frame, iterations = 1).astype(np.uint8) - clusters_frame
+    edge_pixels = np.where(edge_pixels == 1)
+
+    # Fit ellipse
+    xs = edge_pixels[0]
+    ys = edge_pixels[1]
+
+
+    center = ellipse_center(fitEllipse(xs, ys)) + np.array([left_edge, top_edge])
+
+
+
+
+    if debug:
+        ellipse = fitEllipse(xs, ys)
+        center = ellipse_center(ellipse)
+        angle = ellipse_angle_of_rotation(ellipse)
+        axes_lengths = ellipse_axis_length(ellipse)
+
+        num_points = 60
+        ellipse_edge_pixels = np.empty((num_points,2))
+        for i in range(num_points):
+            theta = 1.*i/num_points * 2.*np.pi
+            x = axes_lengths[0]*np.cos(theta)
+            y = axes_lengths[1]*np.sin(theta)
+            ellipse_edge_pixels[i,0] = center[0] + np.cos(angle)*x - np.sin(angle)*y
+            ellipse_edge_pixels[i,1] = center[1] + np.sin(angle)*x + np.cos(angle)*y
+
+        plt.imshow(negative_frame, cmap = 'gray', origin = 'lower', alpha = .75, interpolation = 'none')
+        plt.imshow(clusters_frame, origin = 'lower', alpha = 0.25, interpolation = 'none')
+        plt.scatter(ys, xs, marker = '.', lw = 0, c = np.array([48,239,48])/255.)
+        plt.scatter(center[1], center[0], marker = 'x', c = 'red', s = 200)
+        plt.scatter(ellipse_edge_pixels[:,1], ellipse_edge_pixels[:,0], marker = '.', lw = 0, c = 'red')#c = np.array([247,239,140])/255.)
+
+        plt.show()
+
+
+
+    return center
 
 
 
@@ -593,7 +801,7 @@ def match_events_to_detections(active_events, inactive_events, detections, tf, t
     # This is the maximum Euclidean distance a detection can be from an OpticalEvent
     # for it to be considered potentially 'connected'. Any further than this and the
     # Detection will not be added to the Event.
-    distance_threshold = 600
+    distance_threshold = 200
 
     new_active_events = []
 

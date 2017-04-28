@@ -179,17 +179,72 @@ def make_animation(vid, t0, t1):
 
     def init():
         plot.set_data(vid.get_frame(t0))
+        plt.xticks([])
+        plt.yticks([])
+        plt.xlim(100, 412)
+        plt.ylim(200, 288)
         return (plot,)
 
 
     # animation function. This is called sequentially
+    texts = []
     def animate(i):
         plot.set_data(vid.get_frame(i))
+        new_text = plt.text(0.0, 0.0, 'frame='+str(i-t0)+'/'+str(t1-t0)+'\nt='+str(1000.*(i-t0)/50000.)+'ms',\
+         transform = ax.transAxes, color = 'red', size = 20, ha = 'left', va = 'bottom')
+        for text in texts:
+            text.set_visible(False)
+        texts.append(new_text)
+        plt.xticks([])
+        plt.yticks([])
+        plt.xlim(50, 490)
+        plt.ylim(95, 288)
         return (plot,)
 
     # call the animator. blit=True means only re-draw the parts that have changed.
     #anim = matplotlib.animation.FuncAnimation(fig, animate, np.arange(t0, t1), init_func=init, interval=200, blit=True)
     anim = matplotlib.animation.FuncAnimation(fig, animate, np.arange(t0, t1), interval=200, blit=False)
+
+    return anim
+
+def make_animation_frames(vid, frames):
+
+    template_frame = vid.get_frame(0)
+    dim = template_frame.shape
+
+    # First set up the figure, the axis, and the plot element we want to animate
+    fig, ax = plt.subplots()
+
+
+    plot = ax.imshow(vid.get_frame(frames[0]), cmap = 'gray', origin = 'lower')
+
+    def init():
+        plot.set_data(vid.get_frame(t0))
+        plt.xticks([])
+        plt.yticks([])
+        plt.xlim(100, 412)
+        plt.ylim(200, 288)
+        return (plot,)
+
+
+    # animation function. This is called sequentially
+    texts = []
+    def animate(i):
+        plot.set_data(vid.get_frame(i))
+        new_text = plt.text(0.0, 0.0, 'frame='+str(i-frames[0]+1)+'/'+str(len(set(frames)))+'\nt='+str(1000.*(i-frames[0])/50000.)+'ms',\
+         transform = ax.transAxes, color = 'red', size = 20, ha = 'left', va = 'bottom')
+        for text in texts:
+            text.set_visible(False)
+        texts.append(new_text)
+        plt.xticks([])
+        plt.yticks([])
+        plt.xlim(50, 490)
+        plt.ylim(95, 288)
+        return (plot,)
+
+    # call the animator. blit=True means only re-draw the parts that have changed.
+    #anim = matplotlib.animation.FuncAnimation(fig, animate, np.arange(t0, t1), init_func=init, interval=200, blit=True)
+    anim = matplotlib.animation.FuncAnimation(fig, animate, frames, interval=200, blit=False)
 
     return anim
 

@@ -88,9 +88,35 @@ def open_event_file_json(file_path):
         for event in json_reader['events']:
             baseline = np.array(event['baseline'])
             data = np.array(event['data'])
-            events.append(resistive_pulse.ResistivePulseEvent(data, baseline))
+            id = event['id']
+            events.append(resistive_pulse.ResistivePulseEvent(data, baseline, id))
 
     return events
+
+def save_rp_events_json(file_path, events):
+    """
+    * Description: Saves data in .json format
+    * Return: None
+    * Arguments:
+        - file_path: Path to save file
+    """
+
+
+
+    with open(file_path, 'w') as fh:
+
+        event_json_list = []
+
+        for i, event in enumerate(events):
+            event_json_list.append({'id': str(event._id),
+                                    'baseline': event._baseline.tolist(),
+                                    'data': event._data.tolist()})
+
+        events = {'events': event_json_list}
+
+        json.dump(events, fh)
+
+    return
 
 def get_file_type(file_path):
     """

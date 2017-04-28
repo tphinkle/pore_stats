@@ -951,6 +951,12 @@ class RPController(QtCore.QObject):
             -
         """
 
+        ###### Need to update this function (and others) to change it so that there are only
+        ###### two event plots: one for unselected, one for selected events
+        ###### selecting an event updates the data in the selected events plots
+        ###### etc.
+        ###### This means redrawing more data, but less plots
+
         # Update model
         rp_model._event_manager.select_event(event)
 

@@ -100,17 +100,16 @@ class EventFinder(QtCore.QThread):
 
                         # Update baseline (i.e., in case of drift)
 
-                        baseline=rp.get_baseline(self._search_data, index-2*self._baseline_avg_length,
+                        baseline=rp.get_baseline(self._search_data, index-1*self._baseline_avg_length,# was 2!
                                               self._baseline_avg_length,
                                               self._trigger_sigma_threshold)
 
 
                         # Check if point still exceeds trigger threshold after
                         # updating baseline
-                        if ((self._search_data[index:index+10,1].mean() < baseline[2])
-                            or (self._search_data[index:index+10,1].mean() > baseline[3])):
+                        if ((self._search_data[index:index+20,1].mean() < baseline[2])
+                            or (self._search_data[index:index+20,1].mean() > baseline[3])):
 
-                            print 'b'
                             # Trigger, get first point to exit baseline
                             start_index = index
                             print 'time = ', self._search_data[index,0]
@@ -146,8 +145,12 @@ class EventFinder(QtCore.QThread):
                 while stop_trigger_found == False:
                     in_baseline = False
 
-                    if ((self._search_data[index:index+10,1].mean() > baseline[2])
-                        and (self._search_data[index:index+10,1].mean() < baseline[3])):
+                    #if ((self._search_data[index:index+20,1].mean() > baseline[2])
+                        #and (self._search_data[index:index+20,1].mean() < baseline[3])):
+
+                    if ((self._search_data[index:index+200,1].mean() > baseline[2])
+                        and (self._search_data[index:index+200,1].mean() < baseline[3])):
+                        # Was 20!!!!
                             in_baseline = True
 
                     # Check if return to baseline
@@ -162,7 +165,7 @@ class EventFinder(QtCore.QThread):
                         reentry_threshold=(baseline[1]+baseline[2])/2. # Was just baseline[1]
                         while stop_trigger_found == False:
                             if abs(self._search_data[stop_index,1])>=abs(reentry_threshold):
-
+                                # This makes sure that a small noise spike doesn't make event go back to baseline
                                 stop_trigger_found = True
                                 stop_index = stop_index + self._go_past_length
                             else:

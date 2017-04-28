@@ -53,9 +53,9 @@ class ResistivePulseEvent:
     minima and maxima locations, amplitude, duration, etc.
     """
 
-    def __init__(self, data, baseline):
+    def __init__(self, data, baseline, id = None):
         # Declare member variables
-        self._id = None
+        self._id = id
 
         self._data = None
         self._baseline = None
@@ -168,7 +168,7 @@ def get_maxima_minima(data, sigma=0, refine_length=0, num_maxima = 0, num_minima
 
     # Smooth data
     if sigma != 0:
-        smoothed_data = gaussian_filter(data, sigma=sigma)
+        smoothed_data = scipy.ndimage.filters.gaussian_filter(data, sigma=sigma)
     else:
         smoothed_data = np.array(data)
 
@@ -205,6 +205,7 @@ def get_maxima_minima(data, sigma=0, refine_length=0, num_maxima = 0, num_minima
 
     # Refine maxima/minima
 
+
     for i, maximum in enumerate(maxima):
         temp_data = np.array(data[maximum-
                                   refine_length:maximum+refine_length+1])
@@ -220,10 +221,11 @@ def get_maxima_minima(data, sigma=0, refine_length=0, num_maxima = 0, num_minima
 
 
     # Convert to np array for easier indexing.
-    minima = np.array(minima)
-    maxima = np.array(maxima)
+    minima = np.array(minima, dtype = int)
+    maxima = np.array(maxima, dtype = int)
     d2_minima = np.array(d2_minima)
     d2_maxima = np.array(d2_maxima)
+
 
 
     # Determine which maxima to return

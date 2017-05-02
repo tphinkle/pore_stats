@@ -181,8 +181,8 @@ def make_animation(vid, t0, t1):
         plot.set_data(vid.get_frame(t0))
         plt.xticks([])
         plt.yticks([])
-        plt.xlim(100, 412)
-        plt.ylim(200, 288)
+        #plt.xlim(100, 412)
+        #plt.ylim(200, 288)
         return (plot,)
 
 
@@ -197,8 +197,8 @@ def make_animation(vid, t0, t1):
         texts.append(new_text)
         plt.xticks([])
         plt.yticks([])
-        plt.xlim(50, 490)
-        plt.ylim(95, 288)
+        #plt.xlim(50, 490)
+        #plt.ylim(95, 288)
         return (plot,)
 
     # call the animator. blit=True means only re-draw the parts that have changed.

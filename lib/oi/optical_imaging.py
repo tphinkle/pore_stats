@@ -76,6 +76,7 @@ class OpticalDetection:
 
         return
 
+
 class OpticalEvent:
     """
     - OpticalEvent contains all of the information about a particle while it is in the
@@ -176,7 +177,7 @@ class OpticalEvent:
         px = []
         for detection in self._detections:
             px.append(detection._px)
-        return px
+        return np.array(px)
 
     def get_py(self):
         """
@@ -189,7 +190,7 @@ class OpticalEvent:
         py = []
         for detection in self._detections:
             py.append(detection._py)
-        return py
+        return np.array(py)
 
     def get_tf(self):
         """
@@ -316,7 +317,7 @@ class Stage:
 
         self._length = (np.linalg.norm(self._c3-self._c0)+
                                np.linalg.norm(self._c2-self._c1))/2.
-        self._height = (np.linalg.norm(self._c1-self._c0)+
+        self._width = (np.linalg.norm(self._c1-self._c0)+
                                np.linalg.norm(self._c3 - self._c2))/2.
 
         self._origin = (self._c0 + self._c1)/2.#self._center - self._length/2.*self._norm_x
@@ -330,7 +331,7 @@ class Stage:
             - length: The length to be converted
         """
 
-        return 1.*length*self._length_microns/self._length
+        return 1.*np.array(length)*self._length_microns/self._length
 
     def meters_to_pixels(self, length):
 
@@ -360,7 +361,7 @@ class Stage:
     def in_channel(self, x, y):
         cx, cy = self.get_channel_coordinates(x,y)
         if ((cx >= 0 and cx <= self._length)
-         and (cy <= self._height/2.and cy >= -self._height/2)):
+         and (cy <= self._width/2.and cy >= -self._width/2)):
             return True
         else:
             return False
@@ -517,7 +518,7 @@ def ellipse_axis_length( a ):
     return np.array([res1, res2])
 
 
-def get_detection_center_ellipse_fit(oi_vid, template_frame, detection, debug = False):
+def get_detection_center_ellipse_fit(oi_vid, template_frame, detection, threshold = .05, debug = False):
 
     frame = oi_vid.get_frame(detection._tf)
 
@@ -548,7 +549,6 @@ def get_detection_center_ellipse_fit(oi_vid, template_frame, detection, debug = 
 
 
     # Threshold
-    threshold = 0.02
     threshold_frame = 1*negative_frame
     threshold_frame[threshold_frame >= threshold] = 1
     threshold_frame[threshold_frame < threshold] = 0
@@ -594,15 +594,14 @@ def get_detection_center_ellipse_fit(oi_vid, template_frame, detection, debug = 
     xs = edge_pixels[0]
     ys = edge_pixels[1]
 
-
-    center = ellipse_center(fitEllipse(xs, ys)) + np.array([left_edge, top_edge])
+    ellipse = fitEllipse(xs, ys)
+    center = ellipse_center(ellipse)
 
 
 
 
     if debug:
-        ellipse = fitEllipse(xs, ys)
-        center = ellipse_center(ellipse)
+
         angle = ellipse_angle_of_rotation(ellipse)
         axes_lengths = ellipse_axis_length(ellipse)
 
@@ -615,17 +614,24 @@ def get_detection_center_ellipse_fit(oi_vid, template_frame, detection, debug = 
             ellipse_edge_pixels[i,0] = center[0] + np.cos(angle)*x - np.sin(angle)*y
             ellipse_edge_pixels[i,1] = center[1] + np.sin(angle)*x + np.cos(angle)*y
 
-        plt.imshow(negative_frame, cmap = 'gray', origin = 'lower', alpha = .75, interpolation = 'none')
-        plt.imshow(clusters_frame, origin = 'lower', alpha = 0.25, interpolation = 'none')
+        plt.imshow(negative_frame, cmap = 'gray', origin = 'lower', alpha = .5, interpolation = 'none')
+        #plt.imshow(clusters_frame, origin = 'lower', alpha = 0.25, interpolation = 'none')
+        plt.imshow(clusters_frame, origin = 'lower', alpha = .75, interpolation = 'none')
+
+        # Ellipse contour
         plt.scatter(ys, xs, marker = '.', lw = 0, c = np.array([48,239,48])/255.)
+
+        # Center marker
         plt.scatter(center[1], center[0], marker = 'x', c = 'red', s = 200)
+
+        # Pixels on edge
         plt.scatter(ellipse_edge_pixels[:,1], ellipse_edge_pixels[:,0], marker = '.', lw = 0, c = 'red')#c = np.array([247,239,140])/255.)
 
         plt.show()
 
 
 
-    return center
+    return center + np.array([left_edge, top_edge])
 
 
 

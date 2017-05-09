@@ -23,7 +23,10 @@ RESISTIVE PULSE
 
 # Standard library
 import sys
-sys.path.append('home/prestonh/Desktop/Research/pore_stats/lib')
+import os
+PORE_STATS_BASE_DIRECTORY = os.path.dirname(os.path.realpath(__file__)).replace('/lib/rp', '')
+print PORE_STATS_BASE_DIRECTORY
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib')
 import copy
 
 import json

@@ -313,7 +313,6 @@ class RPModel(PyQt4.QtCore.QObject):
         main_display_data = None
 
         if self._main_ts._display_ready == True:
-            print 'asdf'
             main_display_data = self._main_ts.return_data(t_range[0], t_range[1])
 
 

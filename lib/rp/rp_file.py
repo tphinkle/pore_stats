@@ -16,8 +16,12 @@ import os.path
 import json
 
 import sys
+import os
+PORE_STATS_BASE_DIRECTORY = os.path.dirname(os.path.realpath(__file__)).replace('/lib/rp', '')
+sys.path.append(PORE_STATS_BASE_DIRECTORY)
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/rp/python-neo-master/')
 sys.path.append('/home/prestonh/Desktop/Research/pore_stats/lib/rp/python-neo-master/neo')
-sys.path.append('/home/prestonh/Desktop/Research/pore_stats/lib/rp/python-neo-master/')
+
 # ABF reader
 import neo.io
 #import

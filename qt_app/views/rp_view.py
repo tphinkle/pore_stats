@@ -1,9 +1,13 @@
+# Python standard library
 import sys
-sys.path.append('/home/prestonh/Desktop/Research/pore_stats/qt_app/pyqtgraph-0.9.10')
-import pyqtgraph as pg
+import os
 
+
+# Qt
 import PyQt4.QtCore as QtCore
 import PyQt4.QtGui as QtGui
+import pyqtgraph as pg
+
 
 
 

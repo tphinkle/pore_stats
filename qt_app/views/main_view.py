@@ -1,9 +1,21 @@
+# Python standard library
 import sys
-sys.path.append('./../pyqtgraph')
-import rp_view
+import os
 
+# Qt
 import PyQt4.QtCore
 import PyQt4.QtGui
+
+# Program specific
+PORE_STATS_BASE_DIRECTORY = os.path.dirname(os.path.realpath(__file__)).replace('/qt_app/views', '')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/rp/')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/oi/')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/qt_app/conts')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/qt_app/model')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/qt_app/threads')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/qt_app/views')
+import rp_view
 
 
 class MainView(PyQt4.QtGui.QMainWindow):

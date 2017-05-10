@@ -1,5 +1,11 @@
+# Python standard library
 import sys
 
+# Qt
+import PyQt4.QtCore
+import PyQt4.QtGui
+
+# Program specific
 sys.path.append('./model/')
 from main_model import MainModel
 
@@ -9,8 +15,7 @@ from main_view import MainView
 sys.path.append('./conts/')
 from main_controller import MainController
 
-import PyQt4.QtCore
-import PyQt4.QtGui
+
 
 class App(PyQt4.QtGui.QApplication):
     def __init__(self, sys_argv):

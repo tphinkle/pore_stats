@@ -601,7 +601,7 @@ def get_detection_center_ellipse_fit(oi_vid, template_frame, detection, threshol
 
 
     if debug:
-
+        fig, axes = plt.subplots(1,3)
         angle = ellipse_angle_of_rotation(ellipse)
         axes_lengths = ellipse_axis_length(ellipse)
 
@@ -614,9 +614,16 @@ def get_detection_center_ellipse_fit(oi_vid, template_frame, detection, threshol
             ellipse_edge_pixels[i,0] = center[0] + np.cos(angle)*x - np.sin(angle)*y
             ellipse_edge_pixels[i,1] = center[1] + np.sin(angle)*x + np.cos(angle)*y
 
+        plt.sca(axes[0])
+        plt.imshow(cropped_frame, cmap = 'gray', interpolation = 'none', origin = 'lower')
+
+        plt.sca(axes[1])
+        plt.imshow(threshold_frame, cmap = 'gray', interpolation = 'none', origin = 'lower')
+
+        plt.sca(axes[2])
         plt.imshow(negative_frame, cmap = 'gray', origin = 'lower', alpha = .5, interpolation = 'none')
         #plt.imshow(clusters_frame, origin = 'lower', alpha = 0.25, interpolation = 'none')
-        plt.imshow(clusters_frame, origin = 'lower', alpha = .75, interpolation = 'none')
+        plt.imshow(clusters_frame, origin = 'lower', alpha = .5, interpolation = 'none')
 
         # Ellipse contour
         plt.scatter(ys, xs, marker = '.', lw = 0, c = np.array([48,239,48])/255.)
@@ -625,6 +632,7 @@ def get_detection_center_ellipse_fit(oi_vid, template_frame, detection, threshol
         plt.scatter(center[1], center[0], marker = 'x', c = 'red', s = 200)
 
         # Pixels on edge
+
         plt.scatter(ellipse_edge_pixels[:,1], ellipse_edge_pixels[:,0], marker = '.', lw = 0, c = 'red')#c = np.array([247,239,140])/255.)
 
         plt.show()

@@ -2,9 +2,7 @@
 
 # Standard library
 import sys
-PORE_STATS_DIR = '/home/prestonh/Desktop/Research/pore_stats/qt_app/threads'
-sys.path.append(PORE_STATS_DIR)
-
+import os
 import copy
 import time
 
@@ -12,8 +10,18 @@ import time
 import numpy as np
 import scipy.signal
 
+# Qt
+import PyQt4.QtCore
+
 # Program specific
-sys.path.append('/home/prestonh/Desktop/Research/pore_stats/lib')
+PORE_STATS_BASE_DIRECTORY = os.path.dirname(os.path.realpath(__file__)).replace('/qt_app/model', '')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/rp/')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/oi/')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/qt_app/conts')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/qt_app/model')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/qt_app/threads')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/qt_app/views')
 import rp_event_manager
 import event_finder
 import resistive_pulse as rp
@@ -21,8 +29,7 @@ import rp_file
 import time_series as ts
 import time_series_loader
 
-# Qt
-import PyQt4.QtCore
+
 
 
 

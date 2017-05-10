@@ -2,13 +2,19 @@
 
 # Standard library
 import sys
+import os
+import copy
 
 # Program specific
-sys.path.append('/home/prestonh/Desktop/Research/pore_stats/lib/rp/')
+PORE_STATS_BASE_DIRECTORY = os.path.dirname(os.path.realpath(__file__)).replace('/qt_app/model', '')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/rp/')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/oi/')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/qt_app/conts')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/qt_app/model')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/qt_app/threads')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/qt_app/views')
 import resistive_pulse as rp
-
-
-sys.path.append('/home/prestonh/Desktop/Research/pore_stats/qt_app/model/')
 import rp_model
 
 

@@ -24,11 +24,7 @@ RESISTIVE PULSE
 # Standard library
 import sys
 import os
-PORE_STATS_BASE_DIRECTORY = os.path.dirname(os.path.realpath(__file__)).replace('/lib/rp', '')
-print PORE_STATS_BASE_DIRECTORY
-sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib')
 import copy
-
 import json
 import csv
 from array import array
@@ -37,7 +33,8 @@ from itertools import islice
 
 
 # Program specific
-#import time_series as ts
+PORE_STATS_BASE_DIRECTORY = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib')
 import rp_file
 
 # Scipy

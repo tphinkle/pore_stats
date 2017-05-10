@@ -13,7 +13,7 @@ import numpy as np
 import PyQt4.QtCore as QtCore
 
 # Program specific
-PORE_STATS_BASE_DIRECTORY = os.path.dirname(os.path.realpath(__file__)).replace('/qt_app/threads', '')
+PORE_STATS_BASE_DIRECTORY = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib')
 sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/rp/')
 sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/oi/')

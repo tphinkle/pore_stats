@@ -14,23 +14,22 @@ from itertools import islice
 import copy
 import os.path
 import json
-
 import sys
 import os
-PORE_STATS_BASE_DIRECTORY = os.path.dirname(os.path.realpath(__file__)).replace('/lib/rp', '')
-sys.path.append(PORE_STATS_BASE_DIRECTORY)
-sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/rp/python-neo-master/')
-sys.path.append('/home/prestonh/Desktop/Research/pore_stats/lib/rp/python-neo-master/neo')
 
-# ABF reader
-import neo.io
-#import
 
 # Scipy
 import numpy as np
 
 # Program specific
+PORE_STATS_BASE_DIRECTORY = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/rp/python-neo-master/')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/rp/python-neo-master/neo')
 import resistive_pulse
+import rp_file
+import neo.io
+
 
 # Constants
 ATF_HEADER_LENGTH_GAP_FREE = 10

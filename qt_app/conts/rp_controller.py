@@ -29,8 +29,7 @@ import pyqtgraph as pg
 import pyqtgraph.functions as fn
 
 # Program specific
-# Program specific
-PORE_STATS_BASE_DIRECTORY = os.path.dirname(os.path.realpath(__file__)).replace('/qt_app/conts', '')
+PORE_STATS_BASE_DIRECTORY = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib')
 sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/rp/')
 sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/oi/')

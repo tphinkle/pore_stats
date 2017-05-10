@@ -7,7 +7,7 @@ import PyQt4.QtCore
 import PyQt4.QtGui
 
 # Program specific
-PORE_STATS_BASE_DIRECTORY = os.path.dirname(os.path.realpath(__file__)).replace('/qt_app/views', '')
+PORE_STATS_BASE_DIRECTORY = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib')
 sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/rp/')
 sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/oi/')

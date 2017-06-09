@@ -1,4 +1,4 @@
-![pore_stats logo](https://github.com/tphinkle/pore_stats/blob/master/qt_app/logo.png)
+![pore_stats logo](https://github.com/tphinkle/pore_stats/blob/master/qt_app/resources/logo.png)
 
 
 ## Contents

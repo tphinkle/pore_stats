@@ -28,7 +28,7 @@ sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/rp/python-neo-master/')
 sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/rp/python-neo-master/neo')
 import resistive_pulse
 import rp_file
-import neo.io
+#import neo.io
 
 
 # Constants

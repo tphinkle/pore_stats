@@ -192,6 +192,8 @@ def make_animation(vid, t0, t1):
         plot.set_data(vid.get_frame(i))
         new_text = plt.text(0.0, 0.0, 'frame='+str(i-t0)+'/'+str(t1-t0)+'\nt='+str(1000.*(i-t0)/50000.)+'ms',\
          transform = ax.transAxes, color = 'red', size = 20, ha = 'left', va = 'bottom')
+
+        # Hack to replace text... this just sets the old text to invisible
         for text in texts:
             text.set_visible(False)
         texts.append(new_text)
@@ -306,7 +308,7 @@ def open_event_file_json(file_path):
 
 
 """""""""""""""""""""""""""""""""""""""
-Obsolete
+Deprecated
 """""""""""""""""""""""""""""""""""""""
 
 """
@@ -365,6 +367,8 @@ def load_oi_events(input_filepath):
     * Arguments:
         - input_filepath: Filepath to be opened.
     """
+
+
     f = open(input_filepath, 'r')
 
     reader = csv.reader(f, delimiter = '\t')

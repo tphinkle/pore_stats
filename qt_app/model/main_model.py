@@ -7,9 +7,9 @@ import copy
 
 # Program specific
 PORE_STATS_BASE_DIRECTORY = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib')
-sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/rp/')
-sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/oi/')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/pore_stats')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/pore_stats/rp/')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/pore_stats/oi/')
 sys.path.append(PORE_STATS_BASE_DIRECTORY + '/qt_app/conts')
 sys.path.append(PORE_STATS_BASE_DIRECTORY + '/qt_app/model')
 sys.path.append(PORE_STATS_BASE_DIRECTORY + '/qt_app/threads')

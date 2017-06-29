@@ -203,7 +203,8 @@ class OpticalEvent:
         tf = []
         for detection in self._detections:
             tf.append(detection._tf)
-        return tf
+
+        return np.array(tf)
 
     def get_channel_enter_exit_tf(self, stage):
         """
@@ -517,6 +518,85 @@ def ellipse_axis_length( a ):
     res2=np.sqrt(up/down2)
     return np.array([res1, res2])
 
+def fit_ellipse(oi_vid, template_frame, detection, threshold = .05, debug = False):
+
+    frame = oi_vid.get_frame(detection._tf)
+
+    left_edge = detection._px-30
+    right_edge = detection._px + 30
+    top_edge = detection._py - 30
+    bottom_edge = detection._py + 30
+
+    if left_edge < 0:
+        left_edge = 0
+    if right_edge >= frame.shape[1]:
+        right_edge = frame.shape[1] - 1
+    if top_edge < 0:
+        top_edge = 0
+    if bottom_edge >= frame.shape[0]:
+        bottom_edge = frame.shape[0] - 1
+
+    ind = [left_edge, right_edge, top_edge, bottom_edge]
+
+    # Frame
+    cropped_frame = frame[ind[2]:ind[3],ind[0]:ind[1]]
+
+    # Template frame
+    cropped_template_frame = template_frame[ind[2]:ind[3],ind[0]:ind[1]]
+
+    # Negative
+    negative_frame = np.abs(cropped_frame - cropped_template_frame)
+
+
+    # Threshold
+    threshold_frame = 1*negative_frame
+    threshold_frame[threshold_frame >= threshold] = 1
+    threshold_frame[threshold_frame < threshold] = 0
+
+    # Find clusters in threshold frame
+    clusters_frame = np.zeros(cropped_frame.shape, dtype = np.uint8)
+    clusters = find_clusters_percentage_based(
+        threshold_frame, np.zeros((cropped_frame.shape[0], cropped_frame.shape[1])), cluster_threshold = 10, diag = False)
+
+    # Take pixels from largest cluster
+    cluster = sorted(clusters, key = lambda x: len(x))[-1]
+    for pix in cluster:
+        clusters_frame[pix[0], pix[1]] = 1
+
+
+    # Binary dilate cluster
+    clusters_frame = scipy.ndimage.morphology.binary_dilation(clusters_frame, iterations = 1).astype(np.uint8)
+
+
+    # Remove dangling pixels
+    kernel = np.array([[0, 0, 1],
+                       [0, 1, 1],
+                       [0, 0, 1]])
+    keep_going = True
+    mask = np.zeros(clusters_frame.shape, dtype = np.uint8)
+    mask |= scipy.ndimage.binary_hit_or_miss(clusters_frame, structure1 = kernel)
+    mask |= scipy.ndimage.binary_hit_or_miss(clusters_frame, structure1 = kernel.T)
+    mask |= scipy.ndimage.binary_hit_or_miss(clusters_frame, structure1 = np.fliplr(kernel))
+    mask |= scipy.ndimage.binary_hit_or_miss(clusters_frame, structure1 = np.flipud(kernel))
+
+    clusters_frame = clusters_frame & (1-mask)
+
+
+    # Fill holes
+    clusters_frame = scipy.ndimage.binary_fill_holes(clusters_frame)
+
+
+    # Find edge pixels
+    edge_pixels = scipy.ndimage.morphology.binary_dilation(clusters_frame, iterations = 1).astype(np.uint8) - clusters_frame
+    edge_pixels = np.where(edge_pixels == 1)
+
+    # Fit ellipse
+    xs = edge_pixels[0]
+    ys = edge_pixels[1]
+
+    ellipse = fitEllipse(xs, ys)
+
+    return ellipse
 
 def get_detection_center_ellipse_fit(oi_vid, template_frame, detection, threshold = .05, debug = False):
 

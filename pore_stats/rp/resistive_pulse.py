@@ -154,7 +154,8 @@ def get_maxima_minima(data, sigma=0, refine_length=0, num_maxima = 0, num_minima
         - First, applies a Gaussian filter (scipy) to the data to smooth it
         - Calculates first and second derivatives of data at each point
         - Extrema are detected via a change in sign of first derivatives
-        - Maximum/minimum is determined by sign of second derivative
+        - Magit
+        ximum/minimum is determined by sign of second derivative
     * Return: Lists of max and mins indices (Two lists of floats: 'maxima',
       'minima')
     * Arguments:
@@ -168,7 +169,7 @@ def get_maxima_minima(data, sigma=0, refine_length=0, num_maxima = 0, num_minima
 
     # Smooth data
     if sigma != 0:
-        smoothed_data = scipy.ndimage.filters.gaussian_filter(data, sigma=sigma)
+        smoothed_data = scipy.ndimage.filters.gaussian_filter(data, sigma = sigma)
     else:
         smoothed_data = np.array(data)
 

@@ -522,10 +522,10 @@ def preprocess_fit_ellipse(oi_vid, template_frame, detection, threshold = .05, d
 
     frame = oi_vid.get_frame(detection._tf)
 
-    left_edge = detection._px-30
-    right_edge = detection._px + 30
-    top_edge = detection._py - 30
-    bottom_edge = detection._py + 30
+    left_edge = int(detection._px-30)
+    right_edge = int(detection._px + 30)
+    top_edge = int(detection._py - 30)
+    bottom_edge = int(detection._py + 30)
 
     if left_edge < 0:
         left_edge = 0

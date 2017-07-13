@@ -85,13 +85,8 @@ class OpticalEvent:
     about particle's passage (i.e., time it entered the channel).
     """
 
-
-
-
-
-
     def __init__(self, detections = []):
-
+        self._detections = detections
         self._channel_enter_tf = None
         self._channel_exit_tf = None
 
@@ -667,7 +662,7 @@ def preprocess_fit_ellipse(oi_vid, template_frame, detection, threshold = .05, d
         plt.imshow(clusters_frame, origin = 'lower', alpha = 0.25, interpolation = 'none')
         plt.scatter(edge_pixels[1], edge_pixels[0], lw = 1, c = np.array([48,239,48])/255.)
         plt.scatter(ellipse_center[1], ellipse_center[0], marker = 'x', c = 'red', lw = 2, s = 200)
-        plt.plot(ellipse_edge_pixels[:,1], ellipse_edge_pixels[:,0], lw = 2, c = 'red')#c = np.array([247,239,140])/255.)
+        plt.plot(ellipse_edge_pixels[:,1], ellipse_edge_pixels[:,0], lw = 3, c = 'red')#c = np.array([247,239,140])/255.)
 
         # Text
         plt.text(2.5, 57.5, 'area (pixels$^{2}$):' + str(round(ellipse_area,2)), color = 'red', ha = 'left', va = 'top')

@@ -85,8 +85,13 @@ class OpticalEvent:
     about particle's passage (i.e., time it entered the channel).
     """
 
+
+
+
+
+
     def __init__(self, detections = []):
-        self._detections = detections
+
         self._channel_enter_tf = None
         self._channel_exit_tf = None
 
@@ -486,7 +491,7 @@ Functions
 
 # http://stackoverflow.com/questions/13635528/fit-a-ellipse-in-python-given-a-set-of-points-xi-xi-yi
 
-def fitEllipse(x,y):
+def fit_ellipse(x,y):
     x = x[:,np.newaxis]
     y = y[:,np.newaxis]
     D =  np.hstack((x*x, x*y, y*y, x, y, np.ones_like(x)))
@@ -498,18 +503,18 @@ def fitEllipse(x,y):
     a = V[:,n]
     return a
 
-def ellipse_center(a):
+def get_ellipse_center(a):
     b,c,d,f,g,a = a[1]/2, a[2], a[3]/2, a[4]/2, a[5], a[0]
     num = b*b-a*c
     x0=(c*d-b*f)/num
     y0=(a*f-b*d)/num
     return np.array([x0,y0])
 
-def ellipse_angle_of_rotation( a ):
+def get_ellipse_angle_of_rotation( a ):
     b,c,d,f,g,a = a[1]/2, a[2], a[3]/2, a[4]/2, a[5], a[0]
     return 0.5*np.arctan(2*b/(a-c))
 
-def ellipse_axis_length( a ):
+def get_ellipse_axes_lengths( a ):
     b,c,d,f,g,a = a[1]/2, a[2], a[3]/2, a[4]/2, a[5], a[0]
     up = 2*(a*f*f+c*d*d+g*b*b-2*b*d*f-a*c*g)
     down1=(b*b-a*c)*( (c-a)*np.sqrt(1+4*b*b/((a-c)*(a-c)))-(c+a))
@@ -518,7 +523,7 @@ def ellipse_axis_length( a ):
     res2=np.sqrt(up/down2)
     return np.array([res1, res2])
 
-def fit_ellipse(oi_vid, template_frame, detection, threshold = .05, debug = False):
+def preprocess_fit_ellipse(oi_vid, template_frame, detection, threshold = .05, debug = False):
 
     frame = oi_vid.get_frame(detection._tf)
 
@@ -549,7 +554,7 @@ def fit_ellipse(oi_vid, template_frame, detection, threshold = .05, debug = Fals
 
 
     # Threshold
-    threshold_frame = 1*negative_frame
+    threshold_frame = np.copy(negative_frame)
     threshold_frame[threshold_frame >= threshold] = 1
     threshold_frame[threshold_frame < threshold] = 0
 
@@ -594,7 +599,91 @@ def fit_ellipse(oi_vid, template_frame, detection, threshold = .05, debug = Fals
     xs = edge_pixels[0]
     ys = edge_pixels[1]
 
-    ellipse = fitEllipse(xs, ys)
+    ellipse = fit_ellipse(xs, ys)
+
+    if debug:
+
+        ellipse_center = get_ellipse_center(ellipse)
+        ellipse_angle = get_ellipse_angle_of_rotation(ellipse)
+        ellipse_axes_lengths = get_ellipse_axes_lengths(ellipse)
+        ellipse_aspect = ellipse_axes_lengths[0]/ellipse_axes_lengths[1]
+        ellipse_area = np.pi*ellipse_axes_lengths[0]*ellipse_axes_lengths[1]
+
+
+
+        # Create edge pixels for plotting fit ellipse
+        num_points = 60
+        ellipse_edge_pixels = np.empty((num_points,2))
+        for i in range(num_points):
+            theta = (1.*i)/num_points * 2.*np.pi
+            x = ellipse_axes_lengths[0]*np.cos(theta)
+            y = ellipse_axes_lengths[1]*np.sin(theta)
+            ellipse_edge_pixels[i,0] = ellipse_center[0] + np.cos(ellipse_angle)*x - np.sin(ellipse_angle)*y
+            ellipse_edge_pixels[i,1] = ellipse_center[1] + np.sin(ellipse_angle)*x + np.cos(ellipse_angle)*y
+
+
+
+
+        fig, axes = plt.subplots(3,2, figsize = (8,12))
+
+        # 0    Template plot
+        plt.sca(axes[0,0])
+        plt.imshow(template_frame, cmap = 'gray', origin = 'lower', interpolation = 'none')
+        plt.title('template')
+        axes[0,0].tick_params(labelbottom='off', labelleft = 'off')
+
+        # 1    Particle image plot
+        plt.sca(axes[0,1])
+        plt.imshow(oi_vid.get_frame(detection._tf), cmap = 'gray', origin = 'lower', interpolation = 'none')
+        plt.scatter(detection._px, detection._py, color = 'red', marker = 'x', s = 1)
+        plt.title('particle')
+        plt.xlim(0, template_frame.shape[1])
+        plt.ylim(0, template_frame.shape[0])
+        axes[0,1].tick_params(labelbottom='off', labelleft = 'off')
+
+        # 2    Negative plot
+        plt.sca(axes[1,0])
+        plt.imshow(negative_frame, cmap = 'gray', origin = 'lower', interpolation = 'none')
+        plt.title('negative')
+        axes[1,0].tick_params(labelbottom='off', labelleft = 'off')
+
+        # 3    Threshold plot
+        plt.sca(axes[1,1])
+        plt.imshow(threshold_frame, cmap = 'gray', origin = 'lower', interpolation = 'none')
+        plt.title('threshold')
+        axes[1,1].tick_params(labelbottom='off', labelleft = 'off')
+
+        # 4    Cluster
+        plt.sca(axes[2,0])
+        plt.imshow(clusters_frame, cmap = 'gray', origin = 'lower', interpolation = 'none')
+        plt.title('processed')
+        axes[2,0].tick_params(labelbottom='off', labelleft = 'off')
+
+
+        # 5    Particle edge plot
+        plt.sca(axes[2,1])
+
+        plt.imshow(negative_frame, cmap = 'gray', origin = 'lower', alpha = .75, interpolation = 'none')
+        plt.imshow(clusters_frame, origin = 'lower', alpha = 0.25, interpolation = 'none')
+        plt.scatter(edge_pixels[1], edge_pixels[0], lw = 1, c = np.array([48,239,48])/255.)
+        plt.scatter(ellipse_center[1], ellipse_center[0], marker = 'x', c = 'red', lw = 2, s = 200)
+        plt.plot(ellipse_edge_pixels[:,1], ellipse_edge_pixels[:,0], lw = 2, c = 'red')#c = np.array([247,239,140])/255.)
+
+        # Text
+        plt.text(2.5, 57.5, 'area (pixels$^{2}$):' + str(round(ellipse_area,2)), color = 'red', ha = 'left', va = 'top')
+        plt.text(2.5, 55, 'angle (deg):' + str(round(ellipse_angle*180/np.pi,2)), color = 'red', ha = 'left', va = 'top')
+        plt.text(2.5, 52.5, 'a (pixels): ' + str(round(ellipse_axes_lengths[0],2)), color = 'red', ha = 'left', va = 'top')
+        plt.text(2.5, 50, 'b (pixels): ' + str(round(ellipse_axes_lengths[1],2)), color = 'red', ha = 'left', va = 'top')
+        plt.xlim(0, negative_frame.shape[0])
+        plt.ylim(0, negative_frame.shape[1])
+        axes[2,1].tick_params(labelbottom='off', labelleft = 'off')
+        plt.title('cluster w/ negative, edge pixels, \& fit ellipse')
+
+        fig.tight_layout()
+
+        plt.show()
+
+
 
     return ellipse
 

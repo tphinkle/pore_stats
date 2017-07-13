@@ -30,6 +30,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation
 
+# CV
+import cv2
+
 
 
 
@@ -61,9 +64,14 @@ class Raw():
         (self._image_width*self._image_height)
 
 
-    def get_frame(self, frame, average = False):
+    def get_frame(self, frame, average = False, blur = False):
         self._file_handle.seek(frame*self._bytes_per_frame)
         frame = np.fromfile(self._file_handle, dtype = np.uint8, count = self._bytes_per_frame)
+
+        # Gaussian blur the frame
+        if blur:
+            frame = cv2.GaussianBlur(frame,(5,5),0)
+
 
         frame = frame.reshape(self._image_height, self._image_width)
         frame = frame/255.
@@ -76,6 +84,9 @@ class Raw():
             frame = frame + (mean-np.mean(frame))
             frame[frame > 1] = 1
             frame[frame < 0] = 0
+
+
+
 
 
         return frame
@@ -205,7 +216,7 @@ def make_animation(vid, t0, t1):
 
     # call the animator. blit=True means only re-draw the parts that have changed.
     #anim = matplotlib.animation.FuncAnimation(fig, animate, np.arange(t0, t1), init_func=init, interval=200, blit=True)
-    anim = matplotlib.animation.FuncAnimation(fig, animate, np.arange(t0, t1), interval=200, blit=False)
+    anim = matplotlib.animation.FuncAnimation(fig, animate, np.arange(t0, t1, dtype = np.uint64), interval=200, blit=False)
 
     return anim
 
@@ -233,7 +244,7 @@ def make_animation_frames(vid, frames):
     texts = []
     def animate(i):
         plot.set_data(vid.get_frame(i))
-        new_text = plt.text(0.0, 0.0, 'frame='+str(i-frames[0]+1)+'/'+str(len(set(frames)))+'\nt='+str(1000.*(i-frames[0])/50000.)+'ms',\
+        new_text = plt.text(0, 200, 'frame='+str(i-frames[0]+1)+'/'+str(len(set(frames)))+'\nt='+str(1000.*(i-frames[0])/50000.)+'ms',\
          transform = ax.transAxes, color = 'red', size = 20, ha = 'left', va = 'bottom')
         for text in texts:
             text.set_visible(False)

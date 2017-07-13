@@ -65,7 +65,7 @@ class Raw():
 
 
     def get_frame(self, frame, average = False, blur = False):
-        self._file_handle.seek(frame*self._bytes_per_frame)
+        self._file_handle.seek(int(frame*self._bytes_per_frame))
         frame = np.fromfile(self._file_handle, dtype = np.uint8, count = self._bytes_per_frame)
 
         # Gaussian blur the frame

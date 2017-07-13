@@ -518,7 +518,7 @@ def get_ellipse_axes_lengths( a ):
     res2=np.sqrt(up/down2)
     return np.array([res1, res2])
 
-def preprocess_fit_ellipse(oi_vid, template_frame, detection, threshold = .05, debug = False):
+def preprocess_fit_ellipse(oi_vid, template_frame, detection, threshold = .05, debug = False, debug_save = False):
 
     frame = oi_vid.get_frame(detection._tf)
 
@@ -675,6 +675,9 @@ def preprocess_fit_ellipse(oi_vid, template_frame, detection, threshold = .05, d
         plt.title('cluster w/ negative, edge pixels, \& fit ellipse')
 
         fig.tight_layout()
+
+        if debug_save:
+            plt.savefig('det_' + str(detection._tf) + '.png', dpi = 100)
 
         plt.show()
 

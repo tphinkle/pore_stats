@@ -43,7 +43,7 @@ import cv2
 Classes
 """
 
-class Raw():
+class Video():
     """
     - Contains member variables and functions used to work with raw binary files.
     - For now, user has to supply the resolution, sampling frequency, and

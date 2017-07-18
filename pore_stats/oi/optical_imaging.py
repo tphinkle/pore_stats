@@ -1180,7 +1180,7 @@ def connect_loose_events(events_, tf_sep_threshold = 5, dist_threshold = 20):
 
 def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
  cluster_threshold = 20, template_frame = None,
- alpha = 1, beta = 'avg', blur = False):
+ alpha = 1, beta = 'avg', blur = False, kernel = None):
     """
     * Description: Finds all events within optical imaging data. An event
       is defined as the entrance and exit of a particle (represented as a
@@ -1210,7 +1210,7 @@ def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
 
     template_frame = change_frame_contrast(template_frame, alpha = alpha, beta = beta)
     if blur == True:
-        template_frame = cv2.GaussianBlur(template_frame, (5,5), 0)
+        template_frame = cv2.GaussianBlur(template_frame, kernel, 0)
 
     active_events=[]
     inactive_events=[]

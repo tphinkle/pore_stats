@@ -811,7 +811,7 @@ def get_detection_center_ellipse_fit(oi_vid, template_frame, detection, threshol
 
 
 def find_clusters_percentage_based(frame, template_frame, threshold_difference = .01,
-                  cluster_threshold = 20, diag = False):
+                  cluster_threshold = 20, diag = False, connect = False, connect_threshold = 0):
     """
     * Description: Calling function to start a recursive search for
       clusters of differing pixels between a frame and template frame.
@@ -849,8 +849,39 @@ def find_clusters_percentage_based(frame, template_frame, threshold_difference =
             cluster_pixels, pixel_check_array=add_pixel_to_cluster\
             (negative_frame, pixel_check_array, i, j, threshold_difference, diag = diag)
 
+
+            # If connect option is set, will connect a cluster of pixels with another
+            # cluster based on their proximity.
+            if connect:
+                for i, old_cluster in enumerate(cluster_list):
+
+                    # Cluster centroids are determined by average position of activated
+                    # pixels.
+                    x_old_cluster = np.mean(old_cluster[:,0])
+                    y_old_cluster = np.mean(old_cluster[:,1])
+
+                    x_new_cluster = np.mean(cluster_pixels[:,0])
+                    y_new_cluster = np.mean(cluster_pixels[:,1])
+
+                    # Euclidean distance between new cluster and old cluster
+                    dist = np.sqrt((y_new_cluster - y_old_cluster)**2. + \
+                                   (x_new_cluster - x_old_cluster)**2.)
+
+                    # Are the two clusters close enough to connect?
+                    if dist < connect_threshold:
+
+                        # Add the old cluster onto the new cluster
+                        cluster_pixels = np.vstack((cluster_pixels, old_cluster))
+
+                        # Remove the old cluster from the list
+                        cluster_list.pop(i)
+                        break
+
+            # Add the cluster to the list if its size exceeds the minimum threshold
             if cluster_pixels.shape[0] > cluster_threshold:
                 cluster_list.append(cluster_pixels)
+
+
 
     return cluster_list
 
@@ -1179,8 +1210,7 @@ def connect_loose_events(events_, tf_sep_threshold = 5, dist_threshold = 20):
 
 
 def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
- cluster_threshold = 20, template_frame = None,
- alpha = 1, beta = 'avg', blur = False, kernel = None):
+ cluster_threshold = 20, template_frame = None, blur = False, kernel = None, connect = False, connect_threshold = 0):
     """
     * Description: Finds all events within optical imaging data. An event
       is defined as the entrance and exit of a particle (represented as a
@@ -1208,7 +1238,7 @@ def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
         template_frame = vid.get_frame(ti)
 
 
-    template_frame = change_frame_contrast(template_frame, alpha = alpha, beta = beta)
+    #template_frame = change_frame_contrast(template_frame, alpha = alpha, beta = beta)
     if blur == True:
         template_frame = cv2.GaussianBlur(template_frame, kernel, 0)
 
@@ -1217,6 +1247,11 @@ def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
 
 
     events = []
+
+    # For benchmarking
+    benchmarking_time = time.time()
+
+
     # Search frames for clusters
     for t in xrange(ti, tf):
 
@@ -1224,16 +1259,16 @@ def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
         frame = vid.get_frame(t)
 
         # Image transformations on the frame
-        frame = change_frame_contrast(frame, alpha = alpha, beta = beta)
+        #frame = change_frame_contrast(frame, alpha = alpha, beta = beta)
         if blur == True:
-            frame = cv2.GaussianBlur(frame, (5,5), 0)
+            frame = cv2.GaussianBlur(frame, kernel, 0)
 
         try:
             # Look for clusters in the frame
             clusters = find_clusters_percentage_based(
                                    frame, template_frame,
                                    threshold_difference = threshold_difference,
-                                   cluster_threshold = cluster_threshold)
+                                   cluster_threshold = cluster_threshold, diag = True, connect = connect, connect_threshold = connect_threshold)
 
         except:
             print 'recursion overflow, t = ', t
@@ -1245,7 +1280,14 @@ def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
 
         # Loop tracking
         if t % 1000 == 0:
-            print 't: ', t, '/', tf, '\tclusters:', len(clusters), '\tactive:', len(active_events), '\tinactive:', len(inactive_events)
+            new_benchmarking_time = time.time()
+
+            delta_time = new_benchmarking_time - benchmarking_time
+            period = delta_time/1000.
+            projected_time = period*(tf-t)
+            benchmarking_time = new_benchmarking_time
+
+            print 't: ', t, '/', tf, '\tclusters:', len(clusters), '\tactive:', len(active_events), '\tinactive:', len(inactive_events), '\tprojected time:', projected_time, ' (s)'
         #new_events = [OpticalEvent([detection]) for detection in detections]
 
         # Connect the new detections to the events

@@ -301,6 +301,8 @@ class Stage:
 
         self._template_frame = template_frame
 
+        self._length_microns = 150.
+
         self._c0 = np.array(c0)
         self._c1 = np.array(c1)
         self._c2 = np.array(c2)
@@ -1279,7 +1281,7 @@ def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
                               clusters]
 
         # Loop tracking
-        if t % 1000 == 0:
+        if t % 1000 == 0 and t != ti:
             new_benchmarking_time = time.time()
 
             delta_time = new_benchmarking_time - benchmarking_time

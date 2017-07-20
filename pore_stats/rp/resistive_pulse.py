@@ -148,7 +148,7 @@ def get_sampling_frequency(data):
 
 
 
-def get_maxima_minima(data, sigma=0, refine_length=0, num_maxima = 0, num_minima = 0, return_by = 'accel'):
+def get_maxima_minima(data, sigma=0, refine_length=0, num_maxima = 0, num_minima = 0, return_by = ['accel', 'accel']):
     """
     * Description: Finds the maxima, minima within 2-d, evenly sampled data.
         - First, applies a Gaussian filter (scipy) to the data to smooth it
@@ -232,11 +232,11 @@ def get_maxima_minima(data, sigma=0, refine_length=0, num_maxima = 0, num_minima
     # Determine which maxima to return
     if num_maxima > 0:
         new_maxima = []
-        if return_by == 'accel':
+        if return_by[0] == 'accel':
             maxima = maxima[np.argsort(d2_maxima)[-num_maxima:]]
-        elif return_by == 'high':
+        elif return_by[0] == 'high':
             maxima = maxima[np.argsort(smoothed_data[maxima])[-num_maxima:]]
-        elif return_by == 'low':
+        elif return_by[0] == 'low':
             maxima = maxima[np.argsort(smoothed_data[maxima])[:num_maxima]]
         else:
             raise TypeError('keyword ' + return_by + ' is not recognized; valid keywords are: ["accel", "high", "low"]')
@@ -244,11 +244,11 @@ def get_maxima_minima(data, sigma=0, refine_length=0, num_maxima = 0, num_minima
     # Determine which minima to return
     if num_minima > 0 and minima.shape[0] > 1:
         new_minima = []
-        if return_by == 'accel':
+        if return_by[1] == 'accel':
             minima = minima[np.argsort(d2_minima)[-num_minima:]]
-        elif return_by == 'high':
+        elif return_by[1] == 'high':
             minima = minima[np.argsort(smoothed_data[minima])[-num_minima:]]
-        elif return_by == 'low':
+        elif return_by[1] == 'low':
             minima = minima[np.argsort(smoothed_data[minima])][:num_minima]
         else:
             raise TypeError('keyword ' + return_by + ' is not recognized; valid keywords are: ["accel", "high", "low"]')

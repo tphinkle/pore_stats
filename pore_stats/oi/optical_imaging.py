@@ -415,17 +415,17 @@ class Stage:
         image_length = self._template_frame.shape[1]
         image_height = self._template_frame.shape[0]
 
-        interval = 35
+        interval = self.meters_to_pixels(10)
 
         # Plot horizontal lines
-
+        print self._norm_y
         for i in range(int(image_height/interval)+1):
             y = i*interval
-            plt.plot([0, image_length], [y, y + math.tan(self._norm_x[0]/self._norm_x[1])*image_length], ls = '--', color = 'yellow')
+            plt.plot([0, image_length], [y, y + self._norm_x[1]/self._norm_x[0]*image_length], ls = '--', color = 'yellow')
 
         for i in range(int(image_length/interval)+1):
             x = i*interval
-            plt.plot([x, x + math.tan(self._norm_y[0]/self._norm_y[1])*image_height], [0, image_height], ls = '--', color = 'yellow')
+            plt.plot([x, x + image_height/(self._norm_y[1]/self._norm_y[0])], [0, image_height], ls = '--', color = 'yellow')
 
 
         # Plot vertical lines

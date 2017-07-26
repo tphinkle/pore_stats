@@ -32,6 +32,7 @@ import time
 import cv2
 import sys
 import scipy.ndimage
+import math
 
 """
 Constants
@@ -382,22 +383,22 @@ class Stage:
         plt.scatter(self._origin[0], self._origin[1], marker = 'x', s = 500, c = 'k')
 
         plt.plot([self._c0[0], self._c1[0]],\
-        [self._c0[1], self._c1[1]])
+        [self._c0[1], self._c1[1]], c = 'yellow')
 
         plt.plot([self._c1[0], self._c2[0]],\
-        [self._c1[1], self._c2[1]])
+        [self._c1[1], self._c2[1]], c = 'yellow')
 
         plt.plot([self._c2[0], self._c3[0]],\
-        [self._c2[1], self._c3[1]])
+        [self._c2[1], self._c3[1]], c = 'yellow')
 
         plt.plot([self._c3[0], self._c0[0]],\
-        [self._c3[1], self._c0[1]])
+        [self._c3[1], self._c0[1]], c = 'yellow')
 
 
         plt.imshow(self._template_frame, cmap = 'gray', origin = 'lower')
         for c in [self._c0, self._c1,
                    self._c2, self._c3]:
-             plt.scatter(c[0], c[1], marker = 'x')
+             plt.scatter(c[0], c[1], marker = 'x', s = 100, lw = 3)
 
         plt.text(self._origin[0], self._origin[1],
          str(self._origin), ha = 'left', va = 'center')
@@ -407,23 +408,27 @@ class Stage:
 
         plt.sca(axes[1])
         plt.imshow(self._template_frame, cmap = 'gray', origin = 'lower')
-        plt.plot([self._origin[0] + 1000*self._norm_x[0], self._origin[0], self._origin[0] + 1000*self._norm_y[0]],
-         [self._origin[1] + 1000*self._norm_x[1], self._origin[1], self._origin[1] + 1000*self._norm_y[1]])
-        plt.plot([self._origin[0] - 1000*self._norm_x[0], self._origin[0], self._origin[0] - 1000*self._norm_y[0]],
-         [self._origin[1] - 1000*self._norm_x[1], self._origin[1], self._origin[1] - 1000*self._norm_y[1]])
 
 
-        plt.plot([self._c0[0], self._c1[0]],\
-        [self._c0[1], self._c1[1]])
+        # Plot lines
 
-        plt.plot([self._c1[0], self._c2[0]],\
-        [self._c1[1], self._c2[1]])
+        image_length = self._template_frame.shape[1]
+        image_height = self._template_frame.shape[0]
 
-        plt.plot([self._c2[0], self._c3[0]],\
-        [self._c2[1], self._c3[1]])
+        interval = 35
 
-        plt.plot([self._c3[0], self._c0[0]],\
-        [self._c3[1], self._c0[1]])
+        # Plot horizontal lines
+
+        for i in range(int(image_height/interval)+1):
+            y = i*interval
+            plt.plot([0, image_length], [y, y + math.tan(self._norm_x[0]/self._norm_x[1])*image_length], ls = '--', color = 'yellow')
+
+        for i in range(int(image_length/interval)+1):
+            x = i*interval
+            plt.plot([x, x + math.tan(self._norm_y[0]/self._norm_y[1])*image_height], [0, image_height], ls = '--', color = 'yellow')
+
+
+        # Plot vertical lines
 
         plt.xlim(0, self._template_frame.shape[1])
         plt.ylim(0, self._template_frame.shape[0])
@@ -507,7 +512,7 @@ def get_ellipse_center(a):
     y0=(a*f-b*d)/num
     return np.array([x0,y0])
 
-def get_ellipse_angle_of_rotation( a ):
+def get_ellipse_angle( a ):
     b,c,d,f,g,a = a[1]/2, a[2], a[3]/2, a[4]/2, a[5], a[0]
     return 0.5*np.arctan(2*b/(a-c))
 
@@ -601,7 +606,7 @@ def preprocess_fit_ellipse(oi_vid, template_frame, detection, threshold = .05, d
     if debug:
 
         ellipse_center = get_ellipse_center(ellipse)
-        ellipse_angle = get_ellipse_angle_of_rotation(ellipse)
+        ellipse_angle = get_ellipse_angle(ellipse)
         ellipse_axes_lengths = get_ellipse_axes_lengths(ellipse)
         ellipse_aspect = ellipse_axes_lengths[0]/ellipse_axes_lengths[1]
         ellipse_area = np.pi*ellipse_axes_lengths[0]*ellipse_axes_lengths[1]

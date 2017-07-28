@@ -493,6 +493,10 @@ Functions
 
 # http://stackoverflow.com/questions/13635528/fit-a-ellipse-in-python-given-a-set-of-points-xi-xi-yi
 
+
+
+
+
 def fit_ellipse(x,y):
     x = x[:,np.newaxis]
     y = y[:,np.newaxis]
@@ -505,11 +509,14 @@ def fit_ellipse(x,y):
     a = V[:,n]
     return a
 
-def get_ellipse_center(a):
+def get_ellipse_center(a, offset = None):
     b,c,d,f,g,a = a[1]/2, a[2], a[3]/2, a[4]/2, a[5], a[0]
     num = b*b-a*c
     x0=(c*d-b*f)/num
     y0=(a*f-b*d)/num
+    if offset:
+        x0 = x0 + offset[0]
+        y0 = y0 + offset[1]
     return np.array([x0,y0])
 
 def get_ellipse_angle( a ):

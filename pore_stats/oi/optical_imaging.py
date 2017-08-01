@@ -1224,7 +1224,7 @@ def connect_loose_events(events_, tf_sep_threshold = 5, dist_threshold = 20):
 
 
 def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
- cluster_threshold = 20, template_frame = None, blur = False, kernel = None, connect = False, connect_threshold = 0):
+ cluster_threshold = 20, template_frame = None, diag = True, blur = False, kernel = None, connect = False, connect_threshold = 0):
     """
     * Description: Finds all events within optical imaging data. An event
       is defined as the entrance and exit of a particle (represented as a
@@ -1282,7 +1282,7 @@ def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
             clusters = find_clusters_percentage_based(
                                    frame, template_frame,
                                    threshold_difference = threshold_difference,
-                                   cluster_threshold = cluster_threshold, diag = True, connect = connect, connect_threshold = connect_threshold)
+                                   cluster_threshold = cluster_threshold, diag = diag, connect = connect, connect_threshold = connect_threshold)
 
         except:
             print 'recursion overflow, t = ', t

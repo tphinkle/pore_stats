@@ -177,7 +177,7 @@ class Cine():
 Functions
 """
 
-def make_animation(vid, t0, t1):
+def make_animation(vid, t0, t1, oi_fps):
 
     template_frame = vid.get_frame(0)
     dim = template_frame.shape
@@ -200,9 +200,10 @@ def make_animation(vid, t0, t1):
     # animation function. This is called sequentially
     texts = []
     def animate(i):
-        plot.set_data(vid.get_frame(i))
-        new_text = plt.text(0.0, 0.0, 'frame='+str(i-t0)+'/'+str(t1-t0)+'\nt='+str(1000.*(i-t0)/50000.)+'ms',\
-         transform = ax.transAxes, color = 'red', size = 20, ha = 'left', va = 'bottom')
+        frame = vid.get_frame(i)
+        plot.set_data(frame)
+        new_text = plt.text(0.5, 0.95, 'frame='+str(int(i-t0))+'/'+str(int(t1-t0))+'\nt='+str(1000.*(i-t0)/oi_fps)+'ms',\
+         color = 'red', size = 20, ha = 'center', va = 'top', transform = ax.transAxes)
 
         # Hack to replace text... this just sets the old text to invisible
         for text in texts:

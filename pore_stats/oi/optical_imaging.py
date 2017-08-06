@@ -107,6 +107,7 @@ class OpticalEvent:
         * Arguments:
             - t: The frame of the requested detection
         """
+
         for detection in self._detections:
             if detection._tf == t:
                 det = detection

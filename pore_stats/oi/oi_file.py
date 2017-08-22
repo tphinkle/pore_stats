@@ -68,6 +68,7 @@ class Video():
         self._file_handle.seek(int(frame*self._bytes_per_frame))
         frame = np.fromfile(self._file_handle, dtype = np.uint8, count = self._bytes_per_frame)
 
+        
         # Gaussian blur the frame
         if blur:
             frame = cv2.GaussianBlur(frame,(5,5),0)
@@ -202,7 +203,7 @@ def make_animation(vid, t0, t1, oi_fps):
     def animate(i):
         frame = vid.get_frame(i)
         plot.set_data(frame)
-        new_text = plt.text(0.5, 0.95, 'frame='+str(int(i-t0))+'/'+str(int(t1-t0))+'\nt='+str(1000.*(i-t0)/oi_fps)+'ms',\
+        new_text = plt.text(0.5, 0.95, 'frame='+str(int(i-t0))+'/'+str(int(t1-t0))+'\nt='+str(round(1000.*(i-t0)/(1.*oi_fps), 2))+'ms',\
          color = 'red', size = 20, ha = 'center', va = 'top', transform = ax.transAxes)
 
         # Hack to replace text... this just sets the old text to invisible

@@ -23,12 +23,12 @@ import numpy as np
 
 # Program specific
 PORE_STATS_BASE_DIRECTORY = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib')
-sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/rp/python-neo-master/')
-sys.path.append(PORE_STATS_BASE_DIRECTORY + '/lib/rp/python-neo-master/neo')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/pore_stats')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/pore_stats/rp/python-neo-master/')
+sys.path.append(PORE_STATS_BASE_DIRECTORY + '/pore_stats/rp/python-neo-master/neo')
 import resistive_pulse
 import rp_file
-#import neo.io
+import neo.io
 
 
 # Constants
@@ -478,13 +478,23 @@ def get_data_abf(file_path, start = -1, stop = -1):
     block = r.read_block(lazy = False, cascade = True)
     duration = block.segments[0].analogsignals[0].duration.item()
     sampling_period = block.segments[0].analogsignals[0].sampling_period.item()
-    data_points = int(duration/sampling_period)
-    print data_points
+
+
+
+    # +1 added because there was a mismatch between the signal.times object below and the data array size
+    data_points = int(1.*duration/sampling_period)
+
+
+
+
     data = np.empty((data_points,2))
+
+    # Dont' know why I had this before
     #data = block.segments[0].analogsignals[0].duration*block.segments[0].analogsignals[0].sampling_period
 
     for i, signal in enumerate(block.segments[0].analogsignals):
         if i == 0:
+            data = np.empty((len(signal.times), 2))
             data[:,0] = signal.times
             data[:,1] = signal[:,0].flatten()
 

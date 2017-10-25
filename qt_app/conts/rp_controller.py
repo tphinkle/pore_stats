@@ -620,7 +620,7 @@ class RPController(QtCore.QObject):
         * Arguments:
         """
         predictor = rp_predictor.RPPredictor()
-        predictor.load_model('/home/preston/Desktop/Science/Research/pore_stats/qt_app/ML/params/interp_100_0.pkl')
+        predictor.load_model('/home/prestonh/Desktop/Research/pore_stats/qt_app/ML/params/interp_100_0.pkl')
         predictor._test_features = predictor.get_features(rp_model._event_manager._events)
         predictions = predictor.make_predictions_proba(predictor._test_features)
 
@@ -894,8 +894,8 @@ class RPController(QtCore.QObject):
         """
         # Get coordinates of marker
         x = float((np.max(targeted_event._data[:,0])+np.min(targeted_event._data[:,0]))/2.)
-        offset = 1000
-        y = float(np.max(targeted_event._data[:,1])) + offset
+        #offset = 1000
+        y = float(np.max(targeted_event._data[:,1]) - np.min(targeted_event._data[:,1]))
 
         rp_view._targeted_event_marker_scatter_item.setData([x], [y])
 

@@ -68,7 +68,7 @@ class Video():
         self._file_handle.seek(int(frame*self._bytes_per_frame))
         frame = np.fromfile(self._file_handle, dtype = np.uint8, count = self._bytes_per_frame)
 
-        
+
         # Gaussian blur the frame
         if blur:
             frame = cv2.GaussianBlur(frame,(5,5),0)
@@ -104,6 +104,45 @@ class Cine():
     """
 
     def __init__(self, file_path):
+        '''
+        self._file_path = file_path
+
+        self._file_handle = open(file_path, 'rb')
+
+        # Read header
+        self._file_handle.seek(0)
+        header = self._file_handle.read(44)
+
+        # This byte order is specific to the header
+        #header = struct.unpack('< 2c 2c 2c 2c I I I I I I I 2I', header[:44])
+        header = struct.unpack('< H H H H i I i I I I I d', header[:44])
+        print header
+
+        self._total_frames = header[9]
+        off_image_offset = header[14]
+
+        # Read bitmap info
+        bitmapinfo = self._file_handle.read(40)
+        bitmapinfo = struct.unpack('< I 2l 2H 2I 2l 2I', bitmapinfo)
+
+        print bitmapinfo
+
+        self._image_width = bitmapinfo[1]
+        self._image_height = bitmapinfo[2]
+        #self._bytes_per_frame = self._image_width * self._image_height
+        self._bytes_per_frame = bitmapinfo[6]
+        print 'bytes per frame = ', self._bytes_per_frame
+
+        # Get first image pointer
+        self._file_handle.seek(off_image_offset)
+        self._first_image_byte = self._file_handle.read(4)
+        self._first_image_byte = struct.unpack('< I', self._first_image_byte)[0]
+
+        self._second_image_byte = self._file_handle.read(4)
+        self._second_image_byte = struct.unpack('< I', self._second_image_byte)[0]
+
+        print 'first, second image byte:', self._first_image_byte, self._second_image_byte
+        '''
 
         self._file_path = file_path
 
@@ -114,27 +153,48 @@ class Cine():
         header = self._file_handle.read(44)
 
         # This byte order is specific to the header
-        header = struct.unpack('< 2c 2c 2c 2c I I I I I I I 2I', header[:44])
+        header = struct.unpack('< H H H H i I i I I I I d', header[:44])
 
-        self._total_frames = header[9]
-        off_image_offset = header[14]
+        print 'header = ', header
+
+        self._total_frames = header[7]
+        off_image_offset = header[10]
 
         # Read bitmap info
         bitmapinfo = self._file_handle.read(40)
         bitmapinfo = struct.unpack('< I 2l 2H 2I 2l 2I', bitmapinfo)
 
+        print bitmapinfo
+
         self._image_width = bitmapinfo[1]
         self._image_height = bitmapinfo[2]
-        self._bytes_per_frame = self._image_width * self._image_height
+        #self._bytes_per_frame = self._image_width * self._image_height
+        self._bytes_per_frame = bitmapinfo[6]
+        print 'bytes per frame = ', self._bytes_per_frame
 
         # Get first image pointer
+        # 8 bytes for new camera; 4 bytes for old camera
         self._file_handle.seek(off_image_offset)
-        self._first_image_byte = self._file_handle.read(4)
-        self._first_image_byte = struct.unpack('< I', self._first_image_byte)[0]
+        self._first_image_byte = self._file_handle.read(8)
+        self._first_image_byte = struct.unpack('< Q', self._first_image_byte)[0]
+
+        self._second_image_byte = self._file_handle.read(8)
+        self._second_image_byte = struct.unpack('< Q', self._second_image_byte)[0]
+
+        print 'first, second image byte:', self._first_image_byte, self._second_image_byte
 
 
+    def get_fps(self):
+        offset = 84
 
-    def get_frame(self, t, norm = True, average = False):
+        self._file_handle.seek(offset)
+
+        data = self._file_handle.read(2)
+
+        fps = struct.unpack('< H', data)
+        print fps
+
+    def get_frame(self, t, norm = False, average = False):
 
         """
         * Description:
@@ -156,21 +216,14 @@ class Cine():
         frame_byte = self._first_image_byte + t*(self._bytes_per_frame + 8)
         self._file_handle.seek(frame_byte)
 
-        frame = np.fromfile(self._file_handle, dtype = np.dtype('u1'), count = self._bytes_per_frame)
+        frame = np.fromfile(self._file_handle, dtype = np.dtype(np.uint16), count = self._bytes_per_frame/2)
+
 
         frame = frame.reshape(self._image_height, self._image_width)
-        frame = frame/255.
 
-        # Convenience function for shifting pixel values to mean
-        # Mean is determined on the boolean state of norm, either .5 or 127.5
-        mean = int(norm)*.5 + int(not norm)*255./2
-        if average == True:
-            frame = frame + (mean-np.mean(frame))
-
-        frame[frame > 1] = 1
-        frame[frame < 0] = 0
 
         return frame
+
 
 
 

@@ -114,7 +114,7 @@ class EventFinder(QtCore.QThread):
 
                         # Update baseline (i.e., in case of drift)
 
-                        baseline=rp.get_baseline(self._search_data, index-1*self._baseline_avg_length,# was 2!
+                        baseline=rp.get_baseline(self._search_data, index-2*self._baseline_avg_length,# was 2!
                                               self._baseline_avg_length,
                                               self._trigger_sigma_threshold)
 
@@ -132,7 +132,8 @@ class EventFinder(QtCore.QThread):
                             # current returns to value half-way between
                             # the trigger value and the baseline average
                             # value
-                            reentry_threshold = (baseline[1]+baseline[2])/2. # Was just baseline[1]
+                            #reentry_threshold = (baseline[1]+baseline[2])/2. # Was just baseline[1]
+                            reentry_threshold = (baseline[1]) # Was just baseline[1]
                             while start_trigger_found == False:
 
                                 # Check if data point at start_index

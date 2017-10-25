@@ -70,8 +70,8 @@ class ResistivePulseEvent:
         self._baseline = baseline
 
         # Needs to be fixed for negative events.
-        self._amplitude = abs(self._baseline[1] - np.min(self._data[:,1]))
-
+        #self._amplitude = abs(self._baseline[1] - np.min(self._data[:,1]))
+        self._amplitude = np.max(np.abs(self._data[:,1])) - np.min(np.abs(self._data[:,1]))
         return
 
 
@@ -274,7 +274,24 @@ def filter_events_length(events, length):
 
 
 
+def get_dI_over_I(event):
+    """
+    * Description:
+        - Takes in an RP event and returns the event's current data, but rescaled
+          to dI/I instead of just I, which facilitates RP analysis
+    * Return:
+        - data: 1-D numpy array of dI/I data
+    * Arguments:
+        - event: The resistive uplse event for which we desire the transformed
+        data
+    """
+    
+    data = np.copy(event._data[:,1])
+    baseline = event._baseline[1]
 
+    data = (data - baseline)/data
+
+    return data
 
 
 

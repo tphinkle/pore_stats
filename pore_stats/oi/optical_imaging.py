@@ -1,8 +1,10 @@
 """
 
-IMAGING
+OPTICAL_IMAGING.py
 
 * Contains tools for manipulating image files, and creating and detecting OpticalEvents
+* An OpticalEvent is a sequence of single particle detections that have been
+  identified as belonging to the same physical particle.
 *
 
 * Sections:
@@ -15,6 +17,16 @@ IMAGING
           data of empty stage to be used as a template, channel coordinates,
           etc.
     4. Functions
+        - fit_ellipse():
+            - Fit ellipse to a group of highlighted pixels.
+            - Code from
+                - http://nicky.vanforeest.com/misc/fitEllipse/fitEllipse.html
+        - get_ellipse_center()
+        - get_ellipse_axes_lengths()
+        - get_ellipse_angle()
+        - preprocess_fit_ellipse()
+        - find_clusters_percentage_based()
+        - add_pixel_to_cluster_percentage_based()
 """
 
 """
@@ -259,7 +271,19 @@ class OpticalEvent:
 
 
 
+def load_stage_file(file_path):
 
+    with open(file_path, 'r') as file_handle:
+        cs = file_handle.read()
+        cs.replace(' ','')
+        cs = cs.split('\n')[:4]
+
+        for i in range(len(cs)):
+
+            temp = cs[i].split(',')
+            cs[i] = [int(temp[0]), int(temp[1])]
+
+        return cs
 
 
 class Stage:
@@ -316,6 +340,8 @@ class Stage:
         self._norm_x = ((self._c3-self._c0)+(self._c2-self._c1))/2.
         self._norm_x = (1.*self._norm_x/
                                 np.linalg.norm(self._norm_x)) # Normalize
+
+        self._angle = np.arctan2(self._norm_x[1], self._norm_x[0])
 
         self._norm_y = np.array([-self._norm_x[1],
                                          self._norm_x[0]]) # Orthogonal vector
@@ -487,6 +513,8 @@ class Stage:
         return
 
 
+
+
 """
 Functions
 """
@@ -494,9 +522,59 @@ Functions
 
 # http://stackoverflow.com/questions/13635528/fit-a-ellipse-in-python-given-a-set-of-points-xi-xi-yi
 
+# Image aligned ellipses
+def fit_ellipse_image_aligned(xs,ys):
+    xs = xs[:,np.newaxis]
+    ys = ys[:,np.newaxis]
+    D =  np.hstack((xs*xs, ys*ys, xs, ys, np.ones_like(xs)))
+    S = np.dot(D.T,D)
+    C = np.zeros([5,5])
+    C[0,1] = C[1,0] = 2
+    E, V =  np.linalg.eig(np.dot(np.linalg.inv(S), C))
+    n = np.argmax(np.abs(E))
+    a = V[:,n]
+    b = np.array([a[0], 0, a[1], a[2], a[3], a[4]])
+    return b
+
+def fit_ellipse_angle_aligned(xs, ys, angle):
+    xs = xs[:,np.newaxis]
+    ys = ys[:,np.newaxis]
+    D =  np.hstack((xs*xs, ys*ys, xs, ys, np.ones_like(xs)))
+    S = np.dot(D.T,D)
+    C = np.zeros([5,5])
+    C[0,0] = -(np.tan(2*angle))**2.
+    C[0,1] = C[1,0] = 2+np.sqrt(2)*np.tan(2*angle)
+    C[1,1] = -(np.tan(2*angle))**2.
+    E, V =  np.linalg.eig(np.dot(np.linalg.inv(S), C))
+    n = np.argmax(np.abs(E))
+    a = V[:,n]
+    b = np.array([a[0], (a[0] - a[1])*np.tan(2*angle), a[1], a[2], a[3], a[4]])
+    return b
+
+
+def fit_ellipse_stage_aligned(xs,ys,stage):
+
+    angle = stage._angle
+
+    xs = xs[:,np.newaxis]
+    ys = ys[:,np.newaxis]
+    D =  np.hstack((xs*xs, ys*ys, xs, ys, np.ones_like(xs)))
+    S = np.dot(D.T,D)
+    C = np.zeros([5,5])
+    C[0,0] = -(np.tan(2*angle))**2.
+    C[0,1] = C[1,0] = 2+np.sqrt(2)*np.tan(2*angle)
+    C[1,1] = -(np.tan(2*angle))**2.
+    E, V =  np.linalg.eig(np.dot(np.linalg.inv(S), C))
+    n = np.argmax(np.abs(E))
+    a = V[:,n]
+    b = np.array([a[0], (a[0] - a[1])*np.tan(2*angle), a[1], a[2], a[3], a[4]])
+    return b
 
 
 
+
+
+# Free rotating ellipses
 
 def fit_ellipse(x,y):
     x = x[:,np.newaxis]
@@ -509,6 +587,7 @@ def fit_ellipse(x,y):
     n = np.argmax(np.abs(E))
     a = V[:,n]
     return a
+
 
 def get_ellipse_center(a, offset = None):
     b,c,d,f,g,a = a[1]/2, a[2], a[3]/2, a[4]/2, a[5], a[0]
@@ -826,7 +905,7 @@ def get_detection_center_ellipse_fit(oi_vid, template_frame, detection, threshol
 
 
 def find_clusters_percentage_based(frame, template_frame, threshold_difference = .01,
-                  cluster_threshold = 20, diag = False, connect = False, connect_threshold = 0):
+                  cluster_threshold = 20, diag = False, connect = False, connect_threshold = 0, negative_direction = 'abs'):
     """
     * Description: Calling function to start a recursive search for
       clusters of differing pixels between a frame and template frame.
@@ -842,7 +921,12 @@ def find_clusters_percentage_based(frame, template_frame, threshold_difference =
     """
     sys.setrecursionlimit(10000)
 
-    negative_frame = abs(frame - template_frame)
+    if negative_direction == 'abs':
+        negative_frame = abs(frame - template_frame)
+    elif negative_direction == 'pos':
+        negative_frame = frame - template_frame
+    elif negative_direction == 'neg':
+        negative_frame = template_frame - frame
 
     threshold_indices = np.where(negative_frame > threshold_difference)
     threshold_indices = zip(threshold_indices[0], threshold_indices[1])
@@ -1225,7 +1309,7 @@ def connect_loose_events(events_, tf_sep_threshold = 5, dist_threshold = 20):
 
 
 def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
- cluster_threshold = 20, template_frame = None, diag = True, blur = False, kernel = None, connect = False, connect_threshold = 0):
+ cluster_threshold = 20, template_frame = None, diag = True, blur = False, kernel = None, connect = False, connect_threshold = 0, negative_direction = 'abs', normalize = False):
     """
     * Description: Finds all events within optical imaging data. An event
       is defined as the entrance and exit of a particle (represented as a
@@ -1257,6 +1341,9 @@ def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
     if blur == True:
         template_frame = cv2.GaussianBlur(template_frame, kernel, 0)
 
+    if normalize == True:
+        template_frame = template_frame/np.mean(template_frame)
+
     active_events=[]
     inactive_events=[]
 
@@ -1278,12 +1365,15 @@ def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
         if blur == True:
             frame = cv2.GaussianBlur(frame, kernel, 0)
 
+        if normalize:
+            frame = frame/np.mean(frame)
+
         try:
             # Look for clusters in the frame
             clusters = find_clusters_percentage_based(
                                    frame, template_frame,
                                    threshold_difference = threshold_difference,
-                                   cluster_threshold = cluster_threshold, diag = diag, connect = connect, connect_threshold = connect_threshold)
+                                   cluster_threshold = cluster_threshold, diag = diag, connect = connect, connect_threshold = connect_threshold, negative_direction = negative_direction)
 
         except:
             print 'recursion overflow, t = ', t

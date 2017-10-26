@@ -256,8 +256,9 @@ def make_animation(vid, t0, t1, oi_fps):
     def animate(i):
         frame = vid.get_frame(i)
         plot.set_data(frame)
-        new_text = plt.text(0.5, 0.95, 'frame='+str(int(i-t0))+'/'+str(int(t1-t0))+'\nt='+str(round(1000.*(i-t0)/(1.*oi_fps), 2))+'ms',\
-         color = 'red', size = 20, ha = 'center', va = 'top', transform = ax.transAxes)
+
+        new_text = plt.text(0.5, 1., 'frame='+str(int(i-t0))+'/'+str(int(t1-t0))+r'      t='+str(round(1000.*(i-t0)/(1.*oi_fps), 6))+'ms',\
+         color = 'red', size = 14, ha = 'center', va = 'top', transform = ax.transAxes)
 
         # Hack to replace text... this just sets the old text to invisible
         for text in texts:

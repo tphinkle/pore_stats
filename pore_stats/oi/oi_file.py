@@ -36,6 +36,13 @@ import cv2
 
 
 
+data_base_path = '/home/prestonh/Desktop/Research/cancer_cells/data/'
+ellipse_base_path = '/home/prestonh/Desktop/Research/cancer_cells/analysis/data/'
+
+
+
+
+
 
 
 

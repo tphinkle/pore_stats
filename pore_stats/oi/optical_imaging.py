@@ -533,8 +533,10 @@ def fit_ellipse_image_aligned(xs,ys):
     E, V =  np.linalg.eig(np.dot(np.linalg.inv(S), C))
     n = np.argmax(np.abs(E))
     a = V[:,n]
-    b = np.array([a[0], 0, a[1], a[2], a[3], a[4]])
-    return b
+    ellipse = np.array([a[0], 0, a[1], a[2], a[3], a[4]])
+
+
+    return ellipse
 
 def fit_ellipse_angle_aligned(xs, ys, angle):
     xs = xs[:,np.newaxis]

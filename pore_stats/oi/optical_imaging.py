@@ -640,7 +640,6 @@ def find_clusters_iterative_percentage_based(frame, template_frame, threshold_di
         - cluster_threshold (optional): Minimum number of pixels in a cluster
           for cluster to be considered
     """
-    sys.setrecursionlimit(10000)
 
     # Calculate negatives
     if negative_direction == 'abs':
@@ -655,9 +654,9 @@ def find_clusters_iterative_percentage_based(frame, template_frame, threshold_di
     num_cols = frame.shape[1]
 
     # List of pixel indices exceeding threshold
-    bright_frame = negative_frame > threshold_difference
+    bright_frame = np.pad(negative_frame > threshold_difference, pad_width = 1, mode = 'constant', constant_values = 0)
 
-    threshold_indices = np.where(negative_frame > threshold_difference)
+    threshold_indices = np.where(bright_frame > 0)
     threshold_indices = zip(threshold_indices[0], threshold_indices[1])
 
 
@@ -667,9 +666,11 @@ def find_clusters_iterative_percentage_based(frame, template_frame, threshold_di
 
     # 1 means unchecked
     # 0 means checked
-    pixel_check_array=np.ones((negative_frame.shape[0], negative_frame.shape[1]))
+    pixel_check_array=np.ones((bright_frame.shape[0], bright_frame.shape[1]), dtype = bool)
 
     for coord in threshold_indices:
+
+
 
         # Get i,j pixel coordinates
         i = coord[0]
@@ -680,23 +681,6 @@ def find_clusters_iterative_percentage_based(frame, template_frame, threshold_di
             continue
 
 
-        '''
-        # Pixel is bright and hasn't been added to a cluster yet; start
-        # a new cluster
-        pixel_check_array[i,j] = 0
-        cluster = np.array([[i,j]])
-
-
-
-        pixels_to_check =   int( (i != 0)                                           and (pixel_check_array[i-1,j] == 1) )*[(i-1,j)] + \
-                            int( (i != num_rows - 1)                                and (pixel_check_array[i+1,j] == 1) )*[(i+1,j)] + \
-                            int(                            (j != 0)                and (pixel_check_array[i,j-1] == 1) )*[(i,j-1)] + \
-                            int(                            (j != num_cols - 1)     and (pixel_check_array[i,j+1] == 1) )*[(i,j+1)] + \
-                            int( (i != 0)               and (j != 0 )               and (pixel_check_array[i-1,j-1] == 1) )*[(i-1,j-1)] + \
-                            int( (i != 0)               and (j != num_cols - 1)     and (pixel_check_array[i-1,j+1] == 1) )*[(i-1,j+1)] + \
-                            int( (i != num_rows - 1)    and (j != 0)                and (pixel_check_array[i+1,j-1] == 1) )*[(i+1,j-1)] + \
-                            int( (i != num_rows - 1)    and (j != num_cols - 1)     and (pixel_check_array[i+1,j+1] == 1) )*[(i+1,j+1)]
-        '''
         ctr = 0
         pixels_to_check = [[i,j]]
         cluster = [[i,j]]
@@ -726,52 +710,29 @@ def find_clusters_iterative_percentage_based(frame, template_frame, threshold_di
                     #continue
 
                 # Flag pixel as checked
-                pixel_check_array[ip, jp] = 0
+                pixel_check_array[ip, jp] = False
 
-                # Check if pixel is bright; if so, add it to the list and add its neighbors to the new_pixels_to_check list
-                #if (ip,jp) in threshold_indices:
-                #if bright_frame[ip, jp] == True:
-                #cluster = np.vstack((cluster, np.array([[ip, jp]])))
 
-                new_pixels_to_check +=   int( (bright_frame[ip-1, jp])   and    (ip != 0)                                                  and (pixel_check_array[ip-1,jp] == 1) and ([ip-1, jp] not in new_pixels_to_check) )*[[ip-1,jp]] + \
-                                         int( (bright_frame[ip+1, jp])   and    (ip != num_rows - 1)                                       and (pixel_check_array[ip+1,jp] == 1) and ([ip+1, jp] not in new_pixels_to_check) )*[[ip+1,jp]] + \
-                                         int( (bright_frame[ip, jp-1])   and    (jp != 0)                                                  and (pixel_check_array[ip,jp-1] == 1) and ([ip, jp-1] not in new_pixels_to_check) )*[[ip,jp-1]] + \
-                                         int( (bright_frame[ip, jp+1])   and    (jp != num_cols - 1)                                       and (pixel_check_array[ip,jp+1] == 1) and ([ip, jp+1] not in new_pixels_to_check) )*[[ip,jp+1]] + \
-                                         int( (bright_frame[ip-1, jp-1]) and    (ip != 0)            and (jp != 0 )                        and (pixel_check_array[ip-1,jp-1] == 1)    and ([ip-1, jp-1]    not in new_pixels_to_check) )*[[ip-1,jp-1]] + \
-                                         int( (bright_frame[ip-1, jp+1]) and    (ip != 0)            and (jp != num_cols - 1)              and (pixel_check_array[ip-1,jp+1] == 1)    and ([ip-1, jp+1]    not in new_pixels_to_check) )*[[ip-1,jp+1]] + \
-                                         int( (bright_frame[ip+1, jp-1]) and    (ip != num_rows - 1) and (jp != 0)                         and (pixel_check_array[ip+1,jp-1] == 1)    and ([ip+1, jp-1]    not in new_pixels_to_check) )*[[ip+1,jp-1]] + \
-                                         int( (bright_frame[ip+1, jp+1]) and    (ip != num_rows - 1) and (jp != num_cols - 1)              and (pixel_check_array[ip+1,jp+1] == 1)    and ([ip+1, jp+1]    not in new_pixels_to_check) )*[[ip+1,jp+1]]
+                new_pixels_to_check +=   int( (bright_frame[ip-1, jp])   and (pixel_check_array[ip-1,jp])   and ([ip-1, jp]   not in new_pixels_to_check) )*[[ip-1,jp]] + \
+                                         int( (bright_frame[ip+1, jp])   and (pixel_check_array[ip+1,jp])   and ([ip+1, jp]   not in new_pixels_to_check) )*[[ip+1,jp]] + \
+                                         int( (bright_frame[ip, jp-1])   and (pixel_check_array[ip,jp-1])   and ([ip, jp-1]   not in new_pixels_to_check) )*[[ip,jp-1]] + \
+                                         int( (bright_frame[ip, jp+1])   and (pixel_check_array[ip,jp+1])   and ([ip, jp+1]   not in new_pixels_to_check) )*[[ip,jp+1]] + \
+                                         int( (bright_frame[ip-1, jp-1]) and (pixel_check_array[ip-1,jp-1]) and ([ip-1, jp-1] not in new_pixels_to_check) )*[[ip-1,jp-1]] + \
+                                         int( (bright_frame[ip-1, jp+1]) and (pixel_check_array[ip-1,jp+1]) and ([ip-1, jp+1] not in new_pixels_to_check) )*[[ip-1,jp+1]] + \
+                                         int( (bright_frame[ip+1, jp-1]) and (pixel_check_array[ip+1,jp-1]) and ([ip+1, jp-1] not in new_pixels_to_check) )*[[ip+1,jp-1]] + \
+                                         int( (bright_frame[ip+1, jp+1]) and (pixel_check_array[ip+1,jp+1]) and ([ip+1, jp+1] not in new_pixels_to_check) )*[[ip+1,jp+1]]
 
                 #cluster += np.vstack((cluster, new_pixels_to_check)
                 cluster += new_pixels_to_check
 
-
-            #for pixel in new_pixels_to_check:
-                #pixel_check_array[pixel[0], pixel[1]] = 0
-
-            pixels_to_check = [pixel for pixel in new_pixels_to_check if pixel_check_array[pixel[0], pixel[1]] == 1]
+            pixels_to_check = [pixel for pixel in new_pixels_to_check if pixel_check_array[pixel[0], pixel[1]]]
 
 
 
 
 
 
-
-
-
-
-            # 'recursion limit'; will break as a fail-safe so we don't get caught
-            # in an infinite while loop
-            # If this algorithm is working properly, this won't be necessary
-            ctr += 1
-            if ctr > 30000:
-                print 'hit recursion limit'
-                break
-
-
-        clusters.append(cluster)
-
-
+        clusters.append(np.array(cluster) - 1)
 
     return clusters
 

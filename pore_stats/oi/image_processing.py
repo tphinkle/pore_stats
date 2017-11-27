@@ -180,10 +180,9 @@ def threshold_clusters(frame, cluster_threshold):
     that exceed cluster_threshold number of pixels in size
     '''
 
-    cluster_threshold = 25
 
 
-    clusters = oi.find_clusters_percentage_based(processed_frame, np.zeros((frame.shape[0],\
+    clusters = oi.find_clusters_percentage_based(frame, np.zeros((frame.shape[0],\
                                                                             frame.shape[1])),\
                                                  diag = True, cluster_threshold = cluster_threshold)
 

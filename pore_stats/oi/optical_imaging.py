@@ -45,6 +45,7 @@ import cv2
 import sys
 import scipy.ndimage
 import math
+import IPython.display
 
 """
 Constants
@@ -62,6 +63,8 @@ class OpticalDetection:
     """
 
     def __init__(self, tf = None, pixels = None):
+
+
         self._tf = None
         self._pixels = None
         self._px = None
@@ -72,20 +75,24 @@ class OpticalDetection:
         self._pwidth = None
         self._pheight = None
 
-        if pixels != None:
+        self._tf = int(tf)
 
-            self._tf = int(tf)
-            self._pixels = pixels
-            #self._px = int((pixels[:,1].max()+pixels[:,1].min())/2)
-            #self._py = int((pixels[:,0].max()+pixels[:,0].min())/2)
-            self._px = np.mean(pixels[:,1])
-            self._py = np.mean(pixels[:,0])
-            self._pvx = 0
-            self._pvy = 0
 
-            self._parea = len(self._pixels)
-            self._pwidth = pixels[:,1].max() - pixels[:,1].min()
-            self._pheight = pixels[:,0].max() - pixels[:,0].min()
+        #if pixels != None:
+
+        self._pixels = pixels
+        #self._px = int((pixels[:,1].max()+pixels[:,1].min())/2)
+        #self._py = int((pixels[:,0].max()+pixels[:,0].min())/2)
+        self._px = np.mean(pixels[:,1])
+        self._py = np.mean(pixels[:,0])
+        self._pvx = 0
+        self._pvy = 0
+
+        self._parea = len(self._pixels)
+        self._pwidth = pixels[:,1].max() - pixels[:,1].min()
+        self._pheight = pixels[:,0].max() - pixels[:,0].min()
+
+
 
         return
 
@@ -614,299 +621,160 @@ def get_ellipse_axes_lengths( a ):
     res2=np.sqrt(up/down2)
     return np.array([res1, res2])
 
-def preprocess_fit_ellipse(oi_vid, template_frame, detection, threshold = .05, debug = False, debug_save = False):
 
-    frame = oi_vid.get_frame(detection._tf)
 
-    left_edge = int(detection._px-30)
-    right_edge = int(detection._px + 30)
-    top_edge = int(detection._py - 30)
-    bottom_edge = int(detection._py + 30)
 
-    if left_edge < 0:
-        left_edge = 0
-    if right_edge >= frame.shape[1]:
-        right_edge = frame.shape[1] - 1
-    if top_edge < 0:
-        top_edge = 0
-    if bottom_edge >= frame.shape[0]:
-        bottom_edge = frame.shape[0] - 1
 
-    ind = [left_edge, right_edge, top_edge, bottom_edge]
+def find_clusters_iterative_percentage_based(frame, template_frame, threshold_difference = .01,
+                  cluster_threshold = 20, diag = False, connect = False, connect_threshold = 0, negative_direction = 'abs'):
+    """
+    * Description: Calling function to start an iterative search for
+      clusters of differing pixels between a frame and template frame.
+    * Return: List of pixel clusters ('cluster_list', List [] of 2-D numpy
+      arrays)
+    * Arguments:
+        - frame: The frame to find clusters in
+        - template_frame: The frame to compare to
+        - threshold_difference (optional): Minimum difference in pixel
+          brightness for pixel to be flagged
+        - cluster_threshold (optional): Minimum number of pixels in a cluster
+          for cluster to be considered
+    """
+    sys.setrecursionlimit(10000)
 
-    # Frame
-    cropped_frame = frame[ind[2]:ind[3],ind[0]:ind[1]]
+    # Calculate negatives
+    if negative_direction == 'abs':
+        negative_frame = abs(frame - template_frame)
+    elif negative_direction == 'pos':
+        negative_frame = frame - template_frame
+    elif negative_direction == 'neg':
+        negative_frame = template_frame - frame
 
-    # Template frame
-    cropped_template_frame = template_frame[ind[2]:ind[3],ind[0]:ind[1]]
+    # Get frame Constants
+    num_rows = frame.shape[0]
+    num_cols = frame.shape[1]
 
-    # Negative
-    negative_frame = np.abs(cropped_frame - cropped_template_frame)
+    # List of pixel indices exceeding threshold
+    bright_frame = negative_frame > threshold_difference
 
+    threshold_indices = np.where(negative_frame > threshold_difference)
+    threshold_indices = zip(threshold_indices[0], threshold_indices[1])
 
-    # Threshold
-    threshold_frame = np.copy(negative_frame)
-    threshold_frame[threshold_frame >= threshold] = 1
-    threshold_frame[threshold_frame < threshold] = 0
 
-    # Find clusters in threshold frame
-    clusters_frame = np.zeros(cropped_frame.shape, dtype = np.uint8)
-    clusters = find_clusters_percentage_based(
-        threshold_frame, np.zeros((cropped_frame.shape[0], cropped_frame.shape[1])), cluster_threshold = 10, diag = False)
 
-    # Take pixels from largest cluster
-    cluster = sorted(clusters, key = lambda x: len(x))[-1]
-    for pix in cluster:
-        clusters_frame[pix[0], pix[1]] = 1
+    # Create empy cluster list; this stores all the clusters
+    clusters = []
 
+    # 1 means unchecked
+    # 0 means checked
+    pixel_check_array=np.ones((negative_frame.shape[0], negative_frame.shape[1]))
 
-    # Binary dilate cluster
-    clusters_frame = scipy.ndimage.morphology.binary_dilation(clusters_frame, iterations = 1).astype(np.uint8)
+    for coord in threshold_indices:
 
+        # Get i,j pixel coordinates
+        i = coord[0]
+        j = coord[1]
 
-    # Remove dangling pixels
-    kernel = np.array([[0, 0, 1],
-                       [0, 1, 1],
-                       [0, 0, 1]])
-    keep_going = True
-    mask = np.zeros(clusters_frame.shape, dtype = np.uint8)
-    mask |= scipy.ndimage.binary_hit_or_miss(clusters_frame, structure1 = kernel)
-    mask |= scipy.ndimage.binary_hit_or_miss(clusters_frame, structure1 = kernel.T)
-    mask |= scipy.ndimage.binary_hit_or_miss(clusters_frame, structure1 = np.fliplr(kernel))
-    mask |= scipy.ndimage.binary_hit_or_miss(clusters_frame, structure1 = np.flipud(kernel))
+        # Check if pixel has already been tested; if so, continue
+        if pixel_check_array[i,j] == 0:
+            continue
 
-    clusters_frame = clusters_frame & (1-mask)
 
+        '''
+        # Pixel is bright and hasn't been added to a cluster yet; start
+        # a new cluster
+        pixel_check_array[i,j] = 0
+        cluster = np.array([[i,j]])
 
-    # Fill holes
-    clusters_frame = scipy.ndimage.binary_fill_holes(clusters_frame)
 
 
-    # Find edge pixels
-    edge_pixels = scipy.ndimage.morphology.binary_dilation(clusters_frame, iterations = 1).astype(np.uint8) - clusters_frame
-    edge_pixels = np.where(edge_pixels == 1)
+        pixels_to_check =   int( (i != 0)                                           and (pixel_check_array[i-1,j] == 1) )*[(i-1,j)] + \
+                            int( (i != num_rows - 1)                                and (pixel_check_array[i+1,j] == 1) )*[(i+1,j)] + \
+                            int(                            (j != 0)                and (pixel_check_array[i,j-1] == 1) )*[(i,j-1)] + \
+                            int(                            (j != num_cols - 1)     and (pixel_check_array[i,j+1] == 1) )*[(i,j+1)] + \
+                            int( (i != 0)               and (j != 0 )               and (pixel_check_array[i-1,j-1] == 1) )*[(i-1,j-1)] + \
+                            int( (i != 0)               and (j != num_cols - 1)     and (pixel_check_array[i-1,j+1] == 1) )*[(i-1,j+1)] + \
+                            int( (i != num_rows - 1)    and (j != 0)                and (pixel_check_array[i+1,j-1] == 1) )*[(i+1,j-1)] + \
+                            int( (i != num_rows - 1)    and (j != num_cols - 1)     and (pixel_check_array[i+1,j+1] == 1) )*[(i+1,j+1)]
+        '''
+        ctr = 0
+        pixels_to_check = [(i,j)]
+        cluster = np.array([[i,j]])
 
-    # Fit ellipse
-    xs = edge_pixels[0]
-    ys = edge_pixels[1]
+        while pixels_to_check != []:
 
-    ellipse = fit_ellipse(xs, ys)
 
-    if debug:
+            new_pixels_to_check = []
 
-        ellipse_center = get_ellipse_center(ellipse)
-        ellipse_angle = get_ellipse_angle(ellipse)
-        ellipse_axes_lengths = get_ellipse_axes_lengths(ellipse)
-        ellipse_aspect = ellipse_axes_lengths[0]/ellipse_axes_lengths[1]
-        ellipse_area = np.pi*ellipse_axes_lengths[0]*ellipse_axes_lengths[1]
 
+            #print pixels_to_check
 
+            # Loop over all pixels that need to be checked
+            for pixel_to_check in pixels_to_check:
 
-        # Create edge pixels for plotting fit ellipse
-        num_points = 60
-        ellipse_edge_pixels = np.empty((num_points,2))
-        for i in range(num_points):
-            theta = (1.*i)/num_points * 2.*np.pi
-            x = ellipse_axes_lengths[0]*np.cos(theta)
-            y = ellipse_axes_lengths[1]*np.sin(theta)
-            ellipse_edge_pixels[i,0] = ellipse_center[0] + np.cos(ellipse_angle)*x - np.sin(ellipse_angle)*y
-            ellipse_edge_pixels[i,1] = ellipse_center[1] + np.sin(ellipse_angle)*x + np.cos(ellipse_angle)*y
 
 
+                #print 'checking', pixel_to_check
 
+                # Get pixel indices
+                ip = pixel_to_check[0]
+                jp = pixel_to_check[1]
 
-        fig, axes = plt.subplots(3,2, figsize = (8,12))
 
-        # 0    Template plot
-        plt.sca(axes[0,0])
-        plt.imshow(template_frame, cmap = 'gray', origin = 'lower', interpolation = 'none')
-        plt.title('template')
-        axes[0,0].tick_params(labelbottom='off', labelleft = 'off')
+                # Check if it's already been looked at
+                #if pixel_check_array[ip, jp] == 0:
+                    #continue
 
-        # 1    Particle image plot
-        plt.sca(axes[0,1])
-        plt.imshow(oi_vid.get_frame(detection._tf), cmap = 'gray', origin = 'lower', interpolation = 'none')
-        plt.scatter(detection._px, detection._py, color = 'red', marker = 'x', s = 1)
-        plt.title('particle')
-        plt.xlim(0, template_frame.shape[1])
-        plt.ylim(0, template_frame.shape[0])
-        axes[0,1].tick_params(labelbottom='off', labelleft = 'off')
+                # Flag pixel as checked
+                pixel_check_array[ip, jp] = 0
 
-        # 2    Negative plot
-        plt.sca(axes[1,0])
-        plt.imshow(negative_frame, cmap = 'gray', origin = 'lower', interpolation = 'none')
-        plt.title('negative')
-        axes[1,0].tick_params(labelbottom='off', labelleft = 'off')
+                # Check if pixel is bright; if so, add it to the list and add its neighbors to the new_pixels_to_check list
+                #if (ip,jp) in threshold_indices:
+                #if bright_frame[ip, jp] == True:
+                cluster = np.vstack((cluster, np.array([[ip, jp]])))
 
-        # 3    Threshold plot
-        plt.sca(axes[1,1])
-        plt.imshow(threshold_frame, cmap = 'gray', origin = 'lower', interpolation = 'none')
-        plt.title('threshold')
-        axes[1,1].tick_params(labelbottom='off', labelleft = 'off')
+                new_pixels_to_check +=   int( (ip != 0)                                            and (pixel_check_array[ip-1,jp] == 1)      and ((ip-1, jp)      not in new_pixels_to_check) and (bright_frame[ip-1, jp]) )*[(ip-1,jp)] + \
+                                         int( (ip != num_rows - 1)                                 and (pixel_check_array[ip+1,jp] == 1)      and ((ip+1, jp)      not in new_pixels_to_check) and (bright_frame[ip+1, jp]) )*[(ip+1,jp)] + \
+                                         int(                             (jp != 0)                and (pixel_check_array[ip,jp-1] == 1)      and ((ip, jp-1)      not in new_pixels_to_check) and (bright_frame[ip, jp-1]) )*[(ip,jp-1)] + \
+                                         int(                             (jp != num_cols - 1)     and (pixel_check_array[ip,jp+1] == 1)      and ((ip, jp+1)      not in new_pixels_to_check) and (bright_frame[ip, jp+1])  )*[(ip,jp+1)] + \
+                                         int( (ip != 0)               and (jp != 0 )               and (pixel_check_array[ip-1,jp-1] == 1)    and ((ip-1, jp-1)    not in new_pixels_to_check) and (bright_frame[ip-1, jp-1])  )*[(ip-1,jp-1)] + \
+                                         int( (ip != 0)               and (jp != num_cols - 1)     and (pixel_check_array[ip-1,jp+1] == 1)    and ((ip-1, jp+1)    not in new_pixels_to_check) and (bright_frame[ip-1, jp+1])  )*[(ip-1,jp+1)] + \
+                                         int( (ip != num_rows - 1)    and (jp != 0)                and (pixel_check_array[ip+1,jp-1] == 1)    and ((ip+1, jp-1)    not in new_pixels_to_check) and (bright_frame[ip+1, jp-1])  )*[(ip+1,jp-1)] + \
+                                         int( (ip != num_rows - 1)    and (jp != num_cols - 1)     and (pixel_check_array[ip+1,jp+1] == 1)    and ((ip+1, jp+1)    not in new_pixels_to_check) and (bright_frame[ip+1, jp+1])  )*[(ip+1,jp+1)]
 
-        # 4    Cluster
-        plt.sca(axes[2,0])
-        plt.imshow(clusters_frame, cmap = 'gray', origin = 'lower', interpolation = 'none')
-        plt.title('processed')
-        axes[2,0].tick_params(labelbottom='off', labelleft = 'off')
 
 
-        # 5    Particle edge plot
-        plt.sca(axes[2,1])
 
-        plt.imshow(negative_frame, cmap = 'gray', origin = 'lower', alpha = .75, interpolation = 'none')
-        plt.imshow(clusters_frame, origin = 'lower', alpha = 0.25, interpolation = 'none')
-        plt.scatter(edge_pixels[1], edge_pixels[0], lw = 1, c = np.array([48,239,48])/255.)
-        plt.scatter(ellipse_center[1], ellipse_center[0], marker = 'x', c = 'red', lw = 2, s = 200)
-        plt.plot(ellipse_edge_pixels[:,1], ellipse_edge_pixels[:,0], lw = 3, c = 'red')#c = np.array([247,239,140])/255.)
+            #for pixel in new_pixels_to_check:
+                #pixel_check_array[pixel[0], pixel[1]] = 0
 
-        # Text
-        plt.text(2.5, 57.5, 'area (pixels$^{2}$):' + str(round(ellipse_area,2)), color = 'red', ha = 'left', va = 'top')
-        plt.text(2.5, 55, 'angle (deg):' + str(round(ellipse_angle*180/np.pi,2)), color = 'red', ha = 'left', va = 'top')
-        plt.text(2.5, 52.5, 'a (pixels): ' + str(round(ellipse_axes_lengths[0],2)), color = 'red', ha = 'left', va = 'top')
-        plt.text(2.5, 50, 'b (pixels): ' + str(round(ellipse_axes_lengths[1],2)), color = 'red', ha = 'left', va = 'top')
-        plt.xlim(0, negative_frame.shape[0])
-        plt.ylim(0, negative_frame.shape[1])
-        axes[2,1].tick_params(labelbottom='off', labelleft = 'off')
-        plt.title('cluster w/ negative, edge pixels, \& fit ellipse')
+            pixels_to_check = [pixel for pixel in new_pixels_to_check if pixel_check_array[pixel[0], pixel[1]] == 1]
 
-        fig.tight_layout()
 
-        if debug_save:
-            plt.savefig('det_' + str(detection._tf) + '.png', dpi = 100)
 
-        plt.show()
 
 
 
-    return ellipse
 
-def get_detection_center_ellipse_fit(oi_vid, template_frame, detection, threshold = .05, debug = False):
 
-    frame = oi_vid.get_frame(detection._tf)
 
-    left_edge = detection._px-30
-    right_edge = detection._px + 30
-    top_edge = detection._py - 30
-    bottom_edge = detection._py + 30
 
-    if left_edge < 0:
-        left_edge = 0
-    if right_edge >= frame.shape[1]:
-        right_edge = frame.shape[1] - 1
-    if top_edge < 0:
-        top_edge = 0
-    if bottom_edge >= frame.shape[0]:
-        bottom_edge = frame.shape[0] - 1
+            # 'recursion limit'; will break as a fail-safe so we don't get caught
+            # in an infinite while loop
+            # If this algorithm is working properly, this won't be necessary
+            ctr += 1
+            if ctr > 30000:
+                print 'hit recursion limit'
+                break
 
-    ind = [left_edge, right_edge, top_edge, bottom_edge]
 
-    # Frame
-    cropped_frame = frame[ind[2]:ind[3],ind[0]:ind[1]]
+        clusters.append(cluster)
 
-    # Template frame
-    cropped_template_frame = template_frame[ind[2]:ind[3],ind[0]:ind[1]]
 
-    # Negative
-    negative_frame = np.abs(cropped_frame - cropped_template_frame)
 
+    return clusters
 
-    # Threshold
-    threshold_frame = 1*negative_frame
-    threshold_frame[threshold_frame >= threshold] = 1
-    threshold_frame[threshold_frame < threshold] = 0
-
-    # Find clusters in threshold frame
-    clusters_frame = np.zeros(cropped_frame.shape, dtype = np.uint8)
-    clusters = find_clusters_percentage_based(
-        threshold_frame, np.zeros((cropped_frame.shape[0], cropped_frame.shape[1])), cluster_threshold = 10, diag = False)
-
-    # Take pixels from largest cluster
-    cluster = sorted(clusters, key = lambda x: len(x))[-1]
-    for pix in cluster:
-        clusters_frame[pix[0], pix[1]] = 1
-
-
-    # Binary dilate cluster
-    clusters_frame = scipy.ndimage.morphology.binary_dilation(clusters_frame, iterations = 1).astype(np.uint8)
-
-
-    # Remove dangling pixels
-    kernel = np.array([[0, 0, 1],
-                       [0, 1, 1],
-                       [0, 0, 1]])
-    keep_going = True
-    mask = np.zeros(clusters_frame.shape, dtype = np.uint8)
-    mask |= scipy.ndimage.binary_hit_or_miss(clusters_frame, structure1 = kernel)
-    mask |= scipy.ndimage.binary_hit_or_miss(clusters_frame, structure1 = kernel.T)
-    mask |= scipy.ndimage.binary_hit_or_miss(clusters_frame, structure1 = np.fliplr(kernel))
-    mask |= scipy.ndimage.binary_hit_or_miss(clusters_frame, structure1 = np.flipud(kernel))
-
-    clusters_frame = clusters_frame & (1-mask)
-
-
-    # Fill holes
-    clusters_frame = scipy.ndimage.binary_fill_holes(clusters_frame)
-
-
-    # Find edge pixels
-    edge_pixels = scipy.ndimage.morphology.binary_dilation(clusters_frame, iterations = 1).astype(np.uint8) - clusters_frame
-    edge_pixels = np.where(edge_pixels == 1)
-
-    # Fit ellipse
-    xs = edge_pixels[0]
-    ys = edge_pixels[1]
-
-    ellipse = fitEllipse(xs, ys)
-    center = ellipse_center(ellipse)
-
-
-
-
-    if debug:
-        fig, axes = plt.subplots(1,3)
-        angle = ellipse_angle_of_rotation(ellipse)
-        axes_lengths = ellipse_axis_length(ellipse)
-
-        num_points = 60
-        ellipse_edge_pixels = np.empty((num_points,2))
-        for i in range(num_points):
-            theta = 1.*i/num_points * 2.*np.pi
-            x = axes_lengths[0]*np.cos(theta)
-            y = axes_lengths[1]*np.sin(theta)
-            ellipse_edge_pixels[i,0] = center[0] + np.cos(angle)*x - np.sin(angle)*y
-            ellipse_edge_pixels[i,1] = center[1] + np.sin(angle)*x + np.cos(angle)*y
-
-        plt.sca(axes[0])
-        plt.imshow(cropped_frame, cmap = 'gray', interpolation = 'none', origin = 'lower')
-
-        plt.sca(axes[1])
-        plt.imshow(threshold_frame, cmap = 'gray', interpolation = 'none', origin = 'lower')
-
-        plt.sca(axes[2])
-        plt.imshow(negative_frame, cmap = 'gray', origin = 'lower', alpha = .5, interpolation = 'none')
-        #plt.imshow(clusters_frame, origin = 'lower', alpha = 0.25, interpolation = 'none')
-        plt.imshow(clusters_frame, origin = 'lower', alpha = .5, interpolation = 'none')
-
-        # Ellipse contour
-        plt.scatter(ys, xs, marker = '.', lw = 0, c = np.array([48,239,48])/255.)
-
-        # Center marker
-        plt.scatter(center[1], center[0], marker = 'x', c = 'red', s = 200)
-
-        # Pixels on edge
-
-        plt.scatter(ellipse_edge_pixels[:,1], ellipse_edge_pixels[:,0], marker = '.', lw = 0, c = 'red')#c = np.array([247,239,140])/255.)
-
-        plt.show()
-
-
-
-    return center + np.array([left_edge, top_edge])
-
-
-
-def find_clusters_percentage_based(frame, template_frame, threshold_difference = .01,
+def find_clusters_recursive_percentage_based(frame, template_frame, threshold_difference = .01,
                   cluster_threshold = 20, diag = False, connect = False, connect_threshold = 0, negative_direction = 'abs'):
     """
     * Description: Calling function to start a recursive search for
@@ -1357,6 +1225,9 @@ def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
 
 
     # Search frames for clusters
+    inactive_event_counts = []
+    projected_times = []
+    total_clusters = 0
     for t in xrange(ti, tf):
 
         # Get the frame from the video
@@ -1377,6 +1248,7 @@ def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
                                    threshold_difference = threshold_difference,
                                    cluster_threshold = cluster_threshold, diag = diag, connect = connect, connect_threshold = connect_threshold, negative_direction = negative_direction)
 
+
         except:
             print 'recursion overflow, t = ', t
             continue
@@ -1385,16 +1257,8 @@ def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
         detections = [OpticalDetection(t, cluster) for cluster in
                               clusters]
 
-        # Loop tracking
-        if t % 1000 == 0 and t != ti:
-            new_benchmarking_time = time.time()
 
-            delta_time = new_benchmarking_time - benchmarking_time
-            period = delta_time/1000.
-            projected_time = period*(tf-t)
-            benchmarking_time = new_benchmarking_time
 
-            print 't: ', t, '/', tf, '\tclusters:', len(clusters), '\tactive:', len(active_events), '\tinactive:', len(inactive_events), '\tprojected time:', projected_time, ' (s)'
         #new_events = [OpticalEvent([detection]) for detection in detections]
 
         # Connect the new detections to the events
@@ -1402,7 +1266,36 @@ def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
                                              active_events, inactive_events,
                                              detections, t)
 
-        #events = connect_loose_events(events + new_events)
+
+
+        # Loop tracking
+        if t % 1000 == 0 and t != ti:
+            inactive_event_counts.append(len(inactive_events))
+            IPython.display.clear_output()
+            new_benchmarking_time = time.time()
+
+            delta_time = new_benchmarking_time - benchmarking_time
+            period = delta_time/1000.
+            projected_time = period*(tf-t)/60.
+            projected_times.append(projected_time)
+            benchmarking_time = new_benchmarking_time
+
+            print 't: ', t, '/', tf, '\tclusters:', len(clusters), '\tactive:', len(active_events), '\tinactive:', len(inactive_events), '\tprojected time:', projected_time, ' (min)'
+            plt.close()
+            fig, axes = plt.subplots(1,2, figsize = (8,3))
+
+            plt.sca(axes[0])
+            plt.plot(inactive_event_counts)
+            plt.xlabel('iteration')
+            plt.ylabel('total events found')
+
+            plt.sca(axes[1])
+            plt.plot(projected_times)
+            plt.xlabel('iteration')
+            plt.ylabel('projected finish time (min)')
+
+            fig.tight_layout()
+            plt.show()
 
 
 
@@ -1410,6 +1303,8 @@ def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
     # list
     for active_event in active_events:
         inactive_events.append(active_event)
+
+
 
 
     return inactive_events

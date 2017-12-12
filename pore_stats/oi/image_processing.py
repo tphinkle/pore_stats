@@ -166,7 +166,7 @@ def largest_cluster(frame):
 
 
 
-    clusters = oi.find_clusters_percentage_based(frame, np.zeros((frame.shape[0], frame.shape[1])), diag = True)
+    clusters = oi.find_clusters_iterative_percentage_based(frame, np.zeros((frame.shape[0], frame.shape[1])), diag = True)
     largest_cluster = sorted(clusters, key = lambda x: len(x))[-1]
     cluster_frame = np.zeros(frame.shape, dtype = np.uint8)
     for pixel in largest_cluster:
@@ -180,11 +180,14 @@ def threshold_clusters(frame, cluster_threshold):
     that exceed cluster_threshold number of pixels in size
     '''
 
+    
 
 
-    clusters = oi.find_clusters_percentage_based(frame, np.zeros((frame.shape[0],\
+    clusters = oi.find_clusters_iterative_percentage_based(frame, np.zeros((frame.shape[0],\
                                                                             frame.shape[1])),\
                                                  diag = True, cluster_threshold = cluster_threshold)
+
+    clusters = [cluster for cluster in clusters if len(cluster) > cluster_threshold]
 
     cluster_frame = np.zeros(frame.shape, dtype = np.uint8)
     for cluster in clusters:

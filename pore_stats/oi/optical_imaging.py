@@ -46,6 +46,7 @@ import sys
 import scipy.ndimage
 import math
 import IPython.display
+import skimage.measure
 
 """
 Constants
@@ -736,6 +737,57 @@ def find_clusters_iterative_percentage_based(frame, template_frame, threshold_di
 
     return clusters
 
+def find_clusters_skimage(frame, template_frame, threshold_difference = .01,
+                    cluster_threshold = 20, diag = False, negative_direction = 'abs'):
+    '''
+    Find clusters using the skimage.measure.label function
+    '''
+
+
+    # Create threshold frame
+    if negative_direction == 'abs':
+        negative_frame = abs(frame - template_frame)
+    elif negative_direction == 'pos':
+        negative_frame = frame - template_frame
+    elif negative_direction == 'neg':
+        negative_frame = template_frame - frame
+
+    threshold_frame = np.copy(negative_frame)
+    threshold_frame[threshold_frame < threshold_difference] = 0
+    threshold_frame[threshold_frame >= threshold_difference] = 1
+
+
+    # Perform the clustering
+    clusters = []
+    connectivity = 2*diag + 1*(not diag)
+    label_frame = skimage.measure.label(threshold_frame, connectivity = connectivity)
+    labels = np.unique(label_frame)
+
+    background_label = 0
+    max_length = 0
+    for label in labels:
+        length = len(np.where(label_frame == label)[0])
+        if length > max_length:
+            max_length = length
+            background_label = label
+
+    for label in labels:
+        if label != background_label:
+            cluster = np.where(label_frame == label)
+
+            clusters.append(np.hstack((cluster[0].reshape(-1,1), cluster[1].reshape(-1,1))))
+
+
+
+
+    # Remove all clusters that are too short
+    clusters = [cluster for cluster in clusters if cluster.shape[0] > cluster_threshold]
+
+
+
+    return clusters
+
+
 def find_clusters_recursive_percentage_based(frame, template_frame, threshold_difference = .01,
                   cluster_threshold = 20, diag = False, connect = False, connect_threshold = 0, negative_direction = 'abs'):
     """
@@ -1164,9 +1216,7 @@ def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
     if tf == -1:
         tf = vid._total_frames
 
-    # Define template frame
-    if template_frame == None:
-        template_frame = vid.get_frame(ti)
+
 
 
     #template_frame = change_frame_contrast(template_frame, alpha = alpha, beta = beta)
@@ -1205,10 +1255,17 @@ def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
 
         try:
             # Look for clusters in the frame
-            clusters = find_clusters_percentage_based(
-                                   frame, template_frame,
-                                   threshold_difference = threshold_difference,
-                                   cluster_threshold = cluster_threshold, diag = diag, connect = connect, connect_threshold = connect_threshold, negative_direction = negative_direction)
+
+
+            #Custom clustering algorithm
+            #clusters = find_clusters_skimage(
+                                   #frame, template_frame,
+                                   #threshold_difference = threshold_difference,
+                                   #cluster_threshold = cluster_threshold, diag = diag, negative_direction = negative_direction)
+
+            clusters = find_clusters_iterative_percentage_based(frame, template_frame,
+             threshold_difference = threshold_difference, cluster_threshold = cluster_threshold, diag = diag,
+              connect = False, connect_threshold = connect_threshold, negative_direction = negative_direction)
 
 
         except:

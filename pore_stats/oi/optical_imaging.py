@@ -1258,14 +1258,14 @@ def find_events(vid, ti = 0, tf = -1, threshold_difference = .0375,
 
 
             #Custom clustering algorithm
-            #clusters = find_clusters_skimage(
-                                   #frame, template_frame,
-                                   #threshold_difference = threshold_difference,
-                                   #cluster_threshold = cluster_threshold, diag = diag, negative_direction = negative_direction)
+            clusters = find_clusters_skimage(
+                                   frame, template_frame,
+                                   threshold_difference = threshold_difference,
+                                   cluster_threshold = cluster_threshold, diag = diag, negative_direction = negative_direction)
 
-            clusters = find_clusters_iterative_percentage_based(frame, template_frame,
-             threshold_difference = threshold_difference, cluster_threshold = cluster_threshold, diag = diag,
-              connect = False, connect_threshold = connect_threshold, negative_direction = negative_direction)
+            #clusters = find_clusters_iterative_percentage_based(frame, template_frame,
+             #threshold_difference = threshold_difference, cluster_threshold = cluster_threshold, diag = diag,
+              #connect = False, connect_threshold = connect_threshold, negative_direction = negative_direction)
 
 
         except:

@@ -174,13 +174,17 @@ def largest_cluster(frame):
 
     return cluster_frame
 
+
+
+
+
 def threshold_clusters(frame, cluster_threshold):
     '''
     Form clusters of white pixels that are touching, and only retain the clusters
     that exceed cluster_threshold number of pixels in size
     '''
 
-    
+
 
 
     clusters = oi.find_clusters_iterative_percentage_based(frame, np.zeros((frame.shape[0],\
